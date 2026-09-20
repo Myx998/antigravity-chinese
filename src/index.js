@@ -19,7 +19,16 @@ const {
 // 加载全部模块化词典
 function loadDictionaries(dictDir) {
   const dir = dictDir || path.join(__dirname, 'dictionary');
-  const files = ['actions.json', 'sidebar.json', 'settings.json', 'subagents.json', 'units.json', 'tools.json', 'common.json'];
+  const files = [
+    'common.json',
+    'actions.json',
+    'sidebar.json',
+    'settings.json',
+    'subagents.json',
+    'units.json',
+    'tools.json',
+    'skills.json'
+  ];
   const merged = {};
   const lowerDict = {};
 

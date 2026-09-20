@@ -103,6 +103,9 @@ function isBypassedNode(node) {
 }
 
 function createObserverEngine(translateText) {
+  // 文本节点翻译记录缓存表（WeakMap 防重入与 O(1) 短路短接）
+  const translatedNodes = new WeakMap();
+
   function translateAttributes(el, attrs) {
     if (!el || !el.getAttribute) return;
     for (let i = 0; i < attrs.length; i++) {
@@ -124,13 +127,20 @@ function createObserverEngine(translateText) {
 
     // 文本节点 (Type 3)
     if (node.nodeType === 3) {
-      if (isBypassedNode(node)) return;
       const text = node.nodeValue;
-      if (text && typeof text === 'string') {
-        const trans = translateText(text);
-        if (trans !== null && trans !== text) {
-          node.nodeValue = trans;
-        }
+      if (!text || typeof text !== 'string') return;
+
+      // WeakMap 防重入与短路：若节点内容已是记录的翻译产物，直接 O(1) 短路跳过
+      if (translatedNodes.has(node) && translatedNodes.get(node) === text) {
+        return;
+      }
+
+      if (isBypassedNode(node)) return;
+
+      const trans = translateText(text);
+      if (trans !== null && trans !== text) {
+        translatedNodes.set(node, trans);
+        node.nodeValue = trans;
       }
       return;
     }
@@ -223,9 +233,19 @@ function createObserverEngine(translateText) {
           }
         } else if (m.type === 'characterData') {
           const node = m.target;
+          if (!node || node.nodeType !== 3) continue;
+          const text = node.nodeValue;
+          if (!text || typeof text !== 'string') continue;
+
+          // 防重入：自身修改触发的 characterData 或已有翻译，直接跳过
+          if (translatedNodes.has(node) && translatedNodes.get(node) === text) {
+            continue;
+          }
+
           if (!isBypassedNode(node)) {
-            const trans = translateText(node.nodeValue);
-            if (trans !== null && trans !== node.nodeValue) {
+            const trans = translateText(text);
+            if (trans !== null && trans !== text) {
+              translatedNodes.set(node, trans);
               node.nodeValue = trans;
             }
           }
@@ -323,6 +343,7 @@ function createObserverEngine(translateText) {
 
   return {
     walk,
+    translatedNodes,
     isBypassedElement,
     isBypassedNode,
     startObserver,

@@ -147,15 +147,55 @@ if (-not $payloadFile) {
 
 Write-Host "[INFO] 补丁文件就绪: $payloadFile" -ForegroundColor Green
 
-# 3. 检查并关闭 Antigravity 进程 (释放 Windows 文件占用锁定)
-$processes = Get-Process -Name "antigravity" -ErrorAction SilentlyContinue
-if ($processes) {
-    Write-Host "[NOTICE] 检测到 Antigravity 客户端正在运行。" -ForegroundColor Yellow
-    Write-Host "[NOTICE] Windows 系统保护机制要求更新 app.asar 前必须先关闭客户端。" -ForegroundColor Yellow
-    Write-Host "[NOTICE] 正在准备安全退出 Antigravity 客户端以完成操作..." -ForegroundColor Cyan
-    Start-Sleep -Seconds 2
-    $processes | Stop-Process -Force
+# 3. 检查并强杀 Antigravity 客户端及常驻后台 language_server 进程 (彻底释放 Windows 文件句柄占用锁定)
+$targetProcessPatterns = @("antigravity*", "*language_server*", "language_server*")
+$foundProcesses = @()
+foreach ($pat in $targetProcessPatterns) {
+    $procs = Get-Process -Name $pat -ErrorAction SilentlyContinue
+    if ($procs) {
+        $foundProcesses += $procs
+    }
+}
+$uniqueProcesses = $foundProcesses | Sort-Object -Property Id -Unique
+
+if ($uniqueProcesses -and $uniqueProcesses.Count -gt 0) {
+    Write-Host "[NOTICE] 检测到 Antigravity 或常驻后台 language_server 正在运行 ($($uniqueProcesses.Count) 个相关进程)。" -ForegroundColor Yellow
+    Write-Host "[NOTICE] Windows 系统保护机制要求更新 app.asar 前必须先关闭客户端与后台常驻服务。" -ForegroundColor Yellow
+    Write-Host "[NOTICE] 正在强制终止相关进程以彻底释放文件句柄锁定..." -ForegroundColor Cyan
+    foreach ($p in $uniqueProcesses) {
+        try {
+            Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+        } catch {}
+    }
     Start-Sleep -Seconds 1
+}
+
+# 缓存清理辅助函数：安全清理 V8 编译缓存，杜绝旧字节码缓存假死不生效
+function Clear-AntigravityV8Cache {
+    $appDataDir = "$env:APPDATA\antigravity"
+    if (Test-Path $appDataDir) {
+        Write-Host "[CACHE] 正在安全清理 V8 编译缓存目录，杜绝更新旧缓存假死不生效..." -ForegroundColor Cyan
+        $cacheDirs = @(
+            "Cache",
+            "Code Cache",
+            "GPUCache",
+            "DawnCache",
+            "Service Worker\CacheStorage",
+            "Service Worker\ScriptCache"
+        )
+        foreach ($cDir in $cacheDirs) {
+            $targetDir = Join-Path $appDataDir $cDir
+            if (Test-Path $targetDir) {
+                try {
+                    Remove-Item -Path $targetDir -Recurse -Force -ErrorAction SilentlyContinue
+                    Write-Host "[CACHE] 已清理: $cDir" -ForegroundColor DarkGray
+                } catch {
+                    Write-Host "[WARN] 缓存目录暂无法清理 (可能被占用): $cDir" -ForegroundColor DarkYellow
+                }
+            }
+        }
+        Write-Host "[CACHE] V8 编译缓存清理完毕，下次启动将加载最新汉化代码。" -ForegroundColor Green
+    }
 }
 
 # 4. 自动创建原版备份
@@ -181,6 +221,7 @@ if ($nodeInstalled -and $injectScript) {
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[ERROR] Node 注入失败，将尝试切换至原生 UniversalAsarEngine 回退..." -ForegroundColor Red
     } else {
+        Clear-AntigravityV8Cache
         Write-Host ""
         Write-Host "============================================================" -ForegroundColor Green
         Write-Host "   🎉 恭喜！Google Antigravity 深度汉化已成功安装部署！     " -ForegroundColor Green
@@ -396,6 +437,7 @@ public class UniversalAsarEngine {
 try {
     Add-Type -TypeDefinition $csharpCode -Language CSharp
     [UniversalAsarEngine]::Inject($TargetAsar, $payloadFile)
+    Clear-AntigravityV8Cache
     Write-Host ""
     Write-Host "============================================================" -ForegroundColor Green
     Write-Host "   🎉 恭喜！Google Antigravity 深度汉化已成功安装部署！     " -ForegroundColor Green

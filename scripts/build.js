@@ -135,7 +135,7 @@ function build() {
   // 8. Runtime Initialization
   const translateText = createDispatcher(dictionary, lowerDictionary);
   const observerEngine = createObserverEngine(translateText);
-  const { walk, startObserver, init } = observerEngine;
+  const { walk, startObserver, init, translatedNodes } = observerEngine;
 
   init();
 
@@ -166,6 +166,7 @@ function build() {
       isBypassedElement,
       isBypassedNode,
       walk,
+      translatedNodes,
       startObserver,
       createObserverEngine
     };

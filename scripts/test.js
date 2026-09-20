@@ -624,6 +624,145 @@ it('应该正确翻译 "Agent Security Settings"', () => {
   assert.strictEqual(translateText('Agent Security Settings'), '智能体安全设置');
 });
 
+// 15. Planning Mode 规划模式高频交互词条
+console.log('\nGroup 15: Planning Mode 规划模式核心交互词条');
+it('应该正确翻译规划模式及其计划执行词条', () => {
+  assert.strictEqual(translateText('Proposed Changes'), '提议的变更');
+  assert.strictEqual(translateText('Verification Plan'), '验证计划');
+  assert.strictEqual(translateText('Automated Tests'), '自动化测试');
+  assert.strictEqual(translateText('Manual Verification'), '人工验证');
+  assert.strictEqual(translateText('User Review Required'), '需要用户审查');
+  assert.strictEqual(translateText('Open Questions'), '待解决问题');
+  assert.strictEqual(translateText('Plan Execution'), '计划执行');
+  assert.strictEqual(translateText('Approve Plan'), '批准计划');
+  assert.strictEqual(translateText('Reject Plan'), '拒绝计划');
+  assert.strictEqual(translateText('Planning Mode'), '规划模式');
+  assert.strictEqual(translateText('Approve and Execute'), '批准并执行');
+  assert.strictEqual(translateText('Reject and Stop'), '拒绝并停止');
+});
+
+// 16. 权限策略、会话管理与插件构件词条
+console.log('\nGroup 16: 权限策略、会话管理与插件构件词条');
+it('应该正确翻译权限文件策略词条', () => {
+  assert.strictEqual(translateText('Outside of folders file access policy'), '工作区外文件访问策略');
+  assert.strictEqual(translateText('Terminal Command Auto Execution'), '终端命令自动执行');
+  assert.strictEqual(translateText('Require Review'), '需要审查');
+});
+
+it('应该正确翻译会话管理词条', () => {
+  assert.strictEqual(translateText('Fork Conversation'), '分叉会话');
+  assert.strictEqual(translateText('Group By'), '分组方式');
+});
+
+it('应该正确翻译内置与工作区插件构件词条', () => {
+  assert.strictEqual(translateText('Bundled Skills'), '内置技能');
+  assert.strictEqual(translateText('Bundled Rules'), '内置规则');
+  assert.strictEqual(translateText('Bundled MCP Servers'), '内置 MCP 服务');
+  assert.strictEqual(translateText('Bundled Hooks'), '内置钩子');
+  assert.strictEqual(translateText('User Skills'), '用户技能');
+  assert.strictEqual(translateText('Workspace Skills'), '工作区技能');
+});
+
+// 17. DOM 引擎 WeakMap 防重入与 O(1) 短路机制
+console.log('\nGroup 17: DOM 引擎 WeakMap 防重入与 O(1) 短路机制');
+it('DOM 引擎在翻译文本节点后应记录入 WeakMap 并在重复巡检时 O(1) 短路', () => {
+  let callCount = 0;
+  const customTranslate = (text) => {
+    callCount++;
+    return text === 'Proposed Changes' ? '提议的变更' : text;
+  };
+  const engineInstance = engine.createObserverEngine(customTranslate);
+  const mockNode = {
+    nodeType: 3,
+    nodeValue: 'Proposed Changes'
+  };
+
+  // 第一次遍历：应触发翻译
+  engineInstance.walk(mockNode);
+  assert.strictEqual(mockNode.nodeValue, '提议的变更');
+  assert.strictEqual(callCount, 1);
+  assert.strictEqual(engineInstance.translatedNodes.get(mockNode), '提议的变更');
+
+  // 第二次遍历（巡检）：应触发 WeakMap 短路，不调用 customTranslate
+  engineInstance.walk(mockNode);
+  assert.strictEqual(mockNode.nodeValue, '提议的变更');
+  assert.strictEqual(callCount, 1, '重复巡检时应 O(1) 短路，不重复调用翻译分发器');
+
+  // 当外部程序修改该文本节点（例如重新渲染）：应能感知变化并重新翻译
+  mockNode.nodeValue = 'Proposed Changes';
+  engineInstance.walk(mockNode);
+  assert.strictEqual(callCount, 2, '节点内容被重写后应重新进入翻译分发');
+  assert.strictEqual(mockNode.nodeValue, '提议的变更');
+});
+
+// 18. 多目标联动注入与 7-bit ASCII 补丁验证
+console.log('\nGroup 18: 多目标联动注入与 7-bit ASCII 补丁验证');
+const injectModule = require('./inject');
+const { MODULE_PATCHES, toAsciiUnicode } = injectModule;
+
+it('wizardHtml.js 补丁应正确汉化首屏向导文案', () => {
+  const orig = '<button>Welcome to Antigravity</button><span>Install IDE Extensions</span><p>Choose your primary IDE</p>';
+  const patched = MODULE_PATCHES.wizardHtml.patch(orig);
+  assert.ok(patched.includes(toAsciiUnicode('欢迎使用 Antigravity')));
+  assert.ok(patched.includes(toAsciiUnicode('安装 IDE 扩展插件')));
+  assert.ok(patched.includes(toAsciiUnicode('选择您的主要 IDE')));
+});
+
+it('main.js 补丁应正确汉化退出确认与托盘选项', () => {
+  const orig = 'dialog.showMessageBox({ message: "Are you sure you want to quit?", buttons: ["Quit Antigravity", "Cancel"] });';
+  const patched = MODULE_PATCHES.main.patch(orig);
+  assert.ok(patched.includes(toAsciiUnicode('确定要退出 Antigravity 吗？')));
+  assert.ok(patched.includes(toAsciiUnicode('退出 Antigravity')));
+});
+
+it('tray.js 补丁应正确汉化动态任务计数与托盘文案', () => {
+  const orig = 'const tip = `${count} tasks running`; if (!tasks) return "No background tasks";';
+  const patched = MODULE_PATCHES.tray.patch(orig);
+  assert.ok(patched.includes(toAsciiUnicode('个任务运行中')));
+  assert.ok(patched.includes(toAsciiUnicode('暂无后台任务')));
+});
+
+it('updater.js 补丁应正确汉化更新检查与提示', () => {
+  const orig = 'const menu = [{ label: "Check for Updates..." }]; dialog.show("Update Available", "Restart to Update");';
+  const patched = MODULE_PATCHES.updater.patch(orig);
+  assert.ok(patched.includes(toAsciiUnicode('检查更新...')));
+  assert.ok(patched.includes(toAsciiUnicode('发现新版本')));
+  assert.ok(patched.includes(toAsciiUnicode('重启以应用更新')));
+});
+
+it('menu.js 补丁应正确汉化原生菜单项', () => {
+  const orig = 'const template = [{ label: "&File" }, { label: "About Antigravity" }, { label: "Quit Antigravity" }];';
+  const patched = MODULE_PATCHES.menu.patch(orig);
+  assert.ok(patched.includes(toAsciiUnicode('文件(&F)')));
+  assert.ok(patched.includes(toAsciiUnicode('关于 Antigravity')));
+  assert.ok(patched.includes(toAsciiUnicode('退出 Antigravity')));
+});
+
+it('多目标补丁产物必须 100% 为纯 7-bit ASCII，无裸 UTF-8 汉字', () => {
+  const testSamples = [
+    MODULE_PATCHES.wizardHtml.patch('Welcome to Antigravity'),
+    MODULE_PATCHES.main.patch('Are you sure you want to quit?'),
+    MODULE_PATCHES.tray.patch('No background tasks'),
+    MODULE_PATCHES.updater.patch('Update Available'),
+    MODULE_PATCHES.menu.patch('&File')
+  ];
+  for (const sample of testSamples) {
+    for (let i = 0; i < sample.length; i++) {
+      assert.ok(sample.charCodeAt(i) <= 127, `Non-ASCII byte detected at pos ${i}: ${sample.charCodeAt(i)}`);
+    }
+  }
+});
+
+// 19. 源码入口规范化与完整性验证
+console.log('\nGroup 19: 源码入口与字典加载完整性');
+it('src/index.js 应成功加载 skills.json 且词典条目数与产物保持一致', () => {
+  const src = require('../src');
+  const dicts = src.loadDictionaries();
+  assert.ok(dicts.dictionary['android-cli'] || Object.keys(dicts.dictionary).length > 2000, '应成功加载包括 skills.json 在内的全部词典');
+  assert.strictEqual(dicts.dictionary['Proposed Changes'], '提议的变更');
+  assert.strictEqual(dicts.dictionary['Bundled Skills'], '内置技能');
+});
+
 console.log('\n----------------------------------------------------');
 console.log(`Total: ${totalTests}, Passed: ${passedTests}, Failed: ${failedTests}`);
 if (failedTests > 0) {

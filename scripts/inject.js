@@ -9,6 +9,156 @@ const path = require('path');
 
 const patchMarker = '// Antigravity Chinese Localization Patch';
 
+function toAsciiUnicode(str) {
+  return str.replace(/[^\x00-\x7F]/g, char => {
+    const hex = char.charCodeAt(0).toString(16).padStart(4, '0');
+    return '\\u' + hex;
+  });
+}
+
+function applyReplacements(content, rules) {
+  let result = content;
+  for (const rule of rules) {
+    const target = rule.from;
+    const replacement = typeof rule.to === 'string' ? toAsciiUnicode(rule.to) : rule.to;
+    if (typeof target === 'string') {
+      result = result.split(target).join(replacement);
+    } else if (target instanceof RegExp) {
+      result = result.replace(target, replacement);
+    }
+  }
+  return result;
+}
+
+const MODULE_PATCHES = {
+  loadingOverlay: {
+    patterns: ['dist/loadingOverlay.js', 'dist\\loadingOverlay.js'],
+    patch: (content) => applyReplacements(content, [
+      { from: 'Loading Antigravity', to: '正在加载 Antigravity...' }
+    ])
+  },
+  wizardHtml: {
+    patterns: ['dist/ideInstall/wizardHtml.js', 'dist\\ideInstall\\wizardHtml.js'],
+    patch: (content) => applyReplacements(content, [
+      { from: 'Welcome to Antigravity', to: '欢迎使用 Antigravity' },
+      { from: 'Install IDE Extensions', to: '安装 IDE 扩展插件' },
+      { from: 'Install extensions for your favorite IDEs to enable seamless AI coding workflows.', to: '为您常用的 IDE 安装扩展插件，开启无缝 AI 编程工作流。' },
+      { from: 'Choose your primary IDE', to: '选择您的主要 IDE' },
+      { from: 'Installing...', to: '正在安装...' },
+      { from: 'Installed', to: '已安装' },
+      { from: 'Install Extension', to: '安装扩展' },
+      { from: 'Configure Later', to: '稍后配置' },
+      { from: 'Get Started', to: '开始使用' },
+      { from: 'Skip for now', to: '暂时跳过' },
+      { from: 'Installation Successful', to: '安装成功' },
+      { from: 'Installation Failed', to: '安装失败' },
+      { from: 'Continue', to: '继续' },
+      { from: 'Next', to: '下一步' },
+      { from: 'Back', to: '返回' },
+      { from: 'Skip', to: '跳过' },
+      { from: 'Finish', to: '完成' }
+    ])
+  },
+  main: {
+    patterns: ['dist/main.js', 'dist\\main.js'],
+    patch: (content) => applyReplacements(content, [
+      { from: 'Are you sure you want to quit Antigravity?', to: '确定要退出 Antigravity 吗？' },
+      { from: 'Are you sure you want to quit?', to: '确定要退出 Antigravity 吗？' },
+      { from: 'Are you sure you want to exit?', to: '确定要退出吗？' },
+      { from: 'Do you want to exit?', to: '确定要退出吗？' },
+      { from: 'Quit Antigravity', to: '退出 Antigravity' },
+      { from: 'Exit Antigravity', to: '退出 Antigravity' },
+      { from: 'Keep Running in Background', to: '在后台保持运行' },
+      { from: 'Minimize to Tray', to: '最小化到系统托盘' },
+      { from: 'Show Antigravity', to: '显示 Antigravity' },
+      { from: 'Hide Antigravity', to: '隐藏 Antigravity' },
+      { from: 'Open Antigravity', to: '打开 Antigravity' },
+      { from: 'Toggle Window', to: '切换窗口显示' }
+    ])
+  },
+  tray: {
+    patterns: ['dist/tray.js', 'dist\\tray.js'],
+    patch: (content) => applyReplacements(content, [
+      { from: /([`'"])(\${[^}]+}|\d+)\s+tasks?\s+running\1/g, to: (m, q, p) => `${q}${p} ${toAsciiUnicode('个任务运行中')}${q}` },
+      { from: /([`'"])(\${[^}]+}|\d+)\s+active\s+tasks?\1/g, to: (m, q, p) => `${q}${p} ${toAsciiUnicode('个进行中任务')}${q}` },
+      { from: 'No background tasks', to: '暂无后台任务' },
+      { from: 'tasks running', to: '个任务运行中' },
+      { from: 'task running', to: '个任务运行中' },
+      { from: 'active tasks', to: '个进行中任务' },
+      { from: 'active task', to: '个进行中任务' },
+      { from: 'Tasks Running:', to: '运行中的任务:' },
+      { from: 'Background Tasks:', to: '后台任务:' },
+      { from: 'Antigravity is running in the background', to: 'Antigravity 正在后台运行' },
+      { from: 'Click to open', to: '点击打开' },
+      { from: 'Show Antigravity', to: '显示 Antigravity' },
+      { from: 'Hide Antigravity', to: '隐藏 Antigravity' },
+      { from: 'Open Antigravity', to: '打开 Antigravity' },
+      { from: 'Quit Antigravity', to: '退出 Antigravity' }
+    ])
+  },
+  updater: {
+    patterns: ['dist/updater.js', 'dist\\updater.js'],
+    patch: (content) => applyReplacements(content, [
+      { from: 'Check for Updates...', to: '检查更新...' },
+      { from: 'Check for updates...', to: '检查更新...' },
+      { from: 'Checking for updates...', to: '正在检查更新...' },
+      { from: 'Update Available', to: '发现新版本' },
+      { from: 'Update available', to: '发现新版本' },
+      { from: 'A new version of Antigravity is available.', to: 'Antigravity 有可用新版本。' },
+      { from: 'A new version is available.', to: '有可用新版本。' },
+      { from: 'Downloading update...', to: '正在下载更新...' },
+      { from: 'Update Downloaded', to: '更新已下载完成' },
+      { from: 'Update ready to install', to: '更新已就绪，准备安装' },
+      { from: 'Update ready', to: '更新就绪' },
+      { from: 'Restart to Update', to: '重启以应用更新' },
+      { from: 'Restart and Update', to: '重启并更新' },
+      { from: 'Restart Now', to: '立即重启' },
+      { from: 'Remind Me Later', to: '稍后提醒我' },
+      { from: 'Install and Restart', to: '安装并重启' },
+      { from: 'No updates available.', to: '当前已是最新版本。' },
+      { from: "You're up to date!", to: '当前已是最新版本！' },
+      { from: 'Update Error', to: '更新检查出错' },
+      { from: 'Failed to check for updates', to: '检查更新失败' },
+      { from: 'Failed to download update', to: '下载更新失败' }
+    ])
+  },
+  menu: {
+    patterns: ['dist/menu.js', 'dist\\menu.js'],
+    patch: (content) => applyReplacements(content, [
+      { from: '&File', to: '文件(&F)' },
+      { from: '&Edit', to: '编辑(&E)' },
+      { from: '&View', to: '视图(&V)' },
+      { from: '&Window', to: '窗口(&W)' },
+      { from: '&Help', to: '帮助(&H)' },
+      { from: 'About Antigravity', to: '关于 Antigravity' },
+      { from: 'Preferences', to: '偏好设置' },
+      { from: 'Hide Antigravity', to: '隐藏 Antigravity' },
+      { from: 'Hide Others', to: '隐藏其他' },
+      { from: 'Show All', to: '显示全部' },
+      { from: 'Quit Antigravity', to: '退出 Antigravity' },
+      { from: 'Undo', to: '撤消' },
+      { from: 'Redo', to: '重做' },
+      { from: 'Cut', to: '剪切' },
+      { from: 'Copy', to: '复制' },
+      { from: 'Paste', to: '粘贴' },
+      { from: 'Select All', to: '全选' },
+      { from: 'Minimize', to: '最小化' },
+      { from: 'Zoom', to: '缩放' },
+      { from: 'Close Window', to: '关闭窗口' },
+      { from: 'Bring All to Front', to: '前置全部窗口' },
+      { from: 'Reload', to: '重新加载' },
+      { from: 'Force Reload', to: '强制重新加载' },
+      { from: 'Toggle Developer Tools', to: '切换开发者工具' },
+      { from: 'Toggle Full Screen', to: '切换全屏' },
+      { from: 'Reset Zoom', to: '重置缩放' },
+      { from: 'Zoom In', to: '放大' },
+      { from: 'Zoom Out', to: '缩小' },
+      { from: 'Documentation', to: '官方文档' },
+      { from: 'Report Issue', to: '提交反馈与问题' }
+    ])
+  }
+};
+
 function injectAsar(targetAsarPath, payloadFilePath) {
   if (!fs.existsSync(targetAsarPath)) {
     throw new Error(`Target app.asar not found at: ${targetAsarPath}`);
@@ -74,17 +224,26 @@ function injectAsar(targetAsarPath, payloadFilePath) {
     delete preloadEntry.node.integrity;
   }
 
-  // 2. 查找并汉化 dist/loadingOverlay.js (若存在)
-  const loadingEntry = allEntries.find(e => e.path === 'dist/loadingOverlay.js' || e.path === 'dist\\loadingOverlay.js');
-  if (loadingEntry) {
-    let oldLoading = asarBuf.toString('utf8', dataStart + loadingEntry.oldOffset, dataStart + loadingEntry.oldOffset + loadingEntry.size);
-    let newLoading = oldLoading.replace('Loading Antigravity', '\u6b63\u5728\u52a0\u8f7d Antigravity...');
-    const newLoadingBuf = Buffer.from(newLoading, 'utf8');
-    loadingEntry.overriddenData = newLoadingBuf;
-    loadingEntry.size = newLoadingBuf.length;
-    loadingEntry.node.size = newLoadingBuf.length;
-    if (loadingEntry.node.integrity) {
-      delete loadingEntry.node.integrity;
+  // 2. 联动查找并汉化其他目标模块（首屏向导、主进程、托盘、更新弹窗、原生菜单等）
+  for (const [modKey, modConfig] of Object.entries(MODULE_PATCHES)) {
+    const entry = allEntries.find(e => {
+      const norm = e.path.replace(/\\/g, '/');
+      return modConfig.patterns.some(p => p.replace(/\\/g, '/') === norm);
+    });
+
+    if (entry) {
+      let oldCode = asarBuf.toString('utf8', dataStart + entry.oldOffset, dataStart + entry.oldOffset + entry.size);
+      let patchedCode = modConfig.patch(oldCode);
+      if (patchedCode !== oldCode) {
+        const newBuf = Buffer.from(patchedCode, 'utf8');
+        entry.overriddenData = newBuf;
+        entry.size = newBuf.length;
+        entry.node.size = newBuf.length;
+        if (entry.node.integrity) {
+          delete entry.node.integrity;
+        }
+        console.log(`[PATCH] Successfully localized: ${entry.path} (${modKey})`);
+      }
     }
   }
 
@@ -258,4 +417,12 @@ function checkStatus(asarPath) {
   };
 }
 
-module.exports = { injectAsar, restoreAsar, checkStatus, getDefaultAsarPath };
+module.exports = {
+  injectAsar,
+  restoreAsar,
+  checkStatus,
+  getDefaultAsarPath,
+  MODULE_PATCHES,
+  applyReplacements,
+  toAsciiUnicode
+};
