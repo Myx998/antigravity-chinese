@@ -4,6 +4,8 @@
  */
 
 const DYNAMIC_TEMPLATES = [
+  { regex: /^You have used some of your weekly limit, it will fully refresh in (.+)$/i, format: (m) => `您已使用部分周度额度，它将在 ${m[1].replace(/days?/i, '天').replace(/hours?/i, '小时').replace(/minutes?/i, '分钟').replace(/,/g, '')} 后完全刷新` },
+
   // 智能体角色与层级
   {
     regex: /^(Deep Investigator|Technical Feasibility Investigator|Codebase Researcher|Database Debugger|Code Reviewer|Bug Fixer)\s+(L\d+|Worker\s+\d+|#\d+)$/i,
