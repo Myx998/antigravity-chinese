@@ -34,12 +34,22 @@ const MODULE_PATCHES = {
   loadingOverlay: {
     patterns: ['dist/loadingOverlay.js', 'dist\\loadingOverlay.js'],
     patch: (content) => applyReplacements(content, [
+      { from: '<div class="text">Loading Antigravity</div>', to: `<div class="text">${toAsciiUnicode('正在加载 Antigravity...')}</div>` },
       { from: 'Loading Antigravity', to: '正在加载 Antigravity...' }
     ])
   },
   wizardHtml: {
     patterns: ['dist/ideInstall/wizardHtml.js', 'dist\\ideInstall\\wizardHtml.js'],
     patch: (content) => applyReplacements(content, [
+      // 真实 Antigravity 首屏向导核心文案
+      { from: 'Welcome to the new Antigravity!', to: '欢迎体验全新 Antigravity！' },
+      { from: '<title>Welcome to Antigravity</title>', to: `<title>${toAsciiUnicode('欢迎使用 Antigravity')}</title>` },
+      { from: 'Setting up…', to: '正在准备…' },
+      { from: 'Setting up...', to: '正在准备...' },
+      { from: "Antigravity has been redesigned to put agents first with new capabilities. If you'd still like a code editor, you can download it as a separate app named <b>Antigravity IDE</b>.", to: 'Antigravity 经过全面重塑，以智能体为核心并赋予更强大的全新能力。如果您仍需要代码编辑器，可单独下载名为 <b>Antigravity IDE</b> 的专属应用程序。' },
+      { from: 'Download the Antigravity IDE', to: '下载 Antigravity IDE' },
+      { from: 'Explore the new Antigravity', to: '探索全新 Antigravity' },
+      // 兼容扩展与通用安装流文案
       { from: 'Welcome to Antigravity', to: '欢迎使用 Antigravity' },
       { from: 'Install IDE Extensions', to: '安装 IDE 扩展插件' },
       { from: 'Install extensions for your favorite IDEs to enable seamless AI coding workflows.', to: '为您常用的 IDE 安装扩展插件，开启无缝 AI 编程工作流。' },
@@ -62,8 +72,30 @@ const MODULE_PATCHES = {
   main: {
     patterns: ['dist/main.js', 'dist\\main.js'],
     patch: (content) => applyReplacements(content, [
+      // 退出确认对话框核心文案与按钮
+      { from: "title: 'Confirm Quit'", to: `title: '${toAsciiUnicode('确认退出')}'` },
+      { from: 'title: "Confirm Quit"', to: `title: "${toAsciiUnicode('确认退出')}"` },
+      { from: "message: 'Are you sure you want to quit?'", to: `message: '${toAsciiUnicode('确定要退出 Antigravity 吗？')}'` },
+      { from: 'message: "Are you sure you want to quit?"', to: `message: "${toAsciiUnicode('确定要退出 Antigravity 吗？')}"` },
+      { from: "detail: 'There may be agents or background tasks running.'", to: `detail: '${toAsciiUnicode('可能仍有正在运行中的智能体或后台任务。')}'` },
+      { from: 'detail: "There may be agents or background tasks running."', to: `detail: "${toAsciiUnicode('可能仍有正在运行中的智能体或后台任务。')}"` },
+      { from: "buttons: ['Cancel', 'Quit']", to: `buttons: ['${toAsciiUnicode('取消')}', '${toAsciiUnicode('退出')}']` },
+      { from: 'buttons: ["Cancel", "Quit"]', to: `buttons: ["${toAsciiUnicode('取消')}", "${toAsciiUnicode('退出')}"]` },
+      // 初始系统托盘与 Dock 菜单文案
+      { from: "label: 'No agents running'", to: `label: '${toAsciiUnicode('暂无运行中的智能体')}'` },
+      { from: 'label: "No agents running"', to: `label: "${toAsciiUnicode('暂无运行中的智能体')}"` },
+      { from: 'label: `Open ${electron_1.app.getName()}`', to: `label: \`${toAsciiUnicode('打开')} \${electron_1.app.getName()}\`` },
+      { from: "label: 'New Window'", to: `label: '${toAsciiUnicode('新建窗口')}'` },
+      { from: 'label: "New Window"', to: `label: "${toAsciiUnicode('新建窗口')}"` },
+      { from: "label: 'Quit',", to: `label: '${toAsciiUnicode('退出')}',` },
+      { from: 'label: "Quit",', to: `label: "${toAsciiUnicode('退出')}",` },
+      // 错误弹窗
+      { from: "'Binary not found'", to: `'${toAsciiUnicode('未找到可执行文件')}'` },
+      { from: '"Binary not found"', to: `"${toAsciiUnicode('未找到可执行文件')}"` },
+      { from: "'Startup failed'", to: `'${toAsciiUnicode('启动失败')}'` },
+      { from: '"Startup failed"', to: `"${toAsciiUnicode('启动失败')}"` },
+      // 历史/通用退出与托盘文案回退
       { from: 'Are you sure you want to quit Antigravity?', to: '确定要退出 Antigravity 吗？' },
-      { from: 'Are you sure you want to quit?', to: '确定要退出 Antigravity 吗？' },
       { from: 'Are you sure you want to exit?', to: '确定要退出吗？' },
       { from: 'Do you want to exit?', to: '确定要退出吗？' },
       { from: 'Quit Antigravity', to: '退出 Antigravity' },
@@ -79,9 +111,19 @@ const MODULE_PATCHES = {
   tray: {
     patterns: ['dist/tray.js', 'dist\\tray.js'],
     patch: (content) => applyReplacements(content, [
+      // 真实 dist/tray.js 动态智能体计数拼接逻辑
+      {
+        from: /\(count\s*>\s*0\s*\?\s*`\$\{count\}`\s*:\s*['"]No['"]\)\s*\+\s*['"]\s*agent['"]\s*\+\s*\(count\s*===\s*1\s*\?\s*['"]['"]\s*:\s*['"]s['"]\)\s*\+\s*['"]\s*running['"]/g,
+        to: `(count > 0 ? \`\${count} ${toAsciiUnicode('个智能体运行中')}\` : '${toAsciiUnicode('暂无运行中的智能体')}')`
+      },
+      // 模板字符串与正则动态匹配
+      { from: /([`'"])(\${[^}]+}|\d+)\s+agents?\s+running\1/g, to: (m, q, p) => `${q}${p} ${toAsciiUnicode('个智能体运行中')}${q}` },
       { from: /([`'"])(\${[^}]+}|\d+)\s+tasks?\s+running\1/g, to: (m, q, p) => `${q}${p} ${toAsciiUnicode('个任务运行中')}${q}` },
       { from: /([`'"])(\${[^}]+}|\d+)\s+active\s+tasks?\1/g, to: (m, q, p) => `${q}${p} ${toAsciiUnicode('个进行中任务')}${q}` },
+      { from: 'No agents running', to: '暂无运行中的智能体' },
       { from: 'No background tasks', to: '暂无后台任务' },
+      { from: 'agents running', to: '个智能体运行中' },
+      { from: 'agent running', to: '个智能体运行中' },
       { from: 'tasks running', to: '个任务运行中' },
       { from: 'task running', to: '个任务运行中' },
       { from: 'active tasks', to: '个进行中任务' },
@@ -99,23 +141,39 @@ const MODULE_PATCHES = {
   updater: {
     patterns: ['dist/updater.js', 'dist\\updater.js'],
     patch: (content) => applyReplacements(content, [
+      // MenuUpdateStep 枚举项精确汉化 (与 updateActions 完美联动)
+      { from: 'MenuUpdateStep["CheckForUpdates"] = "Check for Updates"', to: `MenuUpdateStep["CheckForUpdates"] = "${toAsciiUnicode('检查更新...')}"` },
+      { from: 'MenuUpdateStep["CheckingForUpdates"] = "Checking for Updates..."', to: `MenuUpdateStep["CheckingForUpdates"] = "${toAsciiUnicode('正在检查更新...')}"` },
+      { from: 'MenuUpdateStep["DownloadingUpdate"] = "Downloading Update..."', to: `MenuUpdateStep["DownloadingUpdate"] = "${toAsciiUnicode('正在下载更新...')}"` },
+      { from: 'MenuUpdateStep["RestartToUpdate"] = "Restart to Update"', to: `MenuUpdateStep["RestartToUpdate"] = "${toAsciiUnicode('重启以应用更新')}"` },
+      // 更新检查弹窗
+      { from: "title: 'Check for Updates'", to: `title: '${toAsciiUnicode('检查更新')}'` },
+      { from: 'title: "Check for Updates"', to: `title: "${toAsciiUnicode('检查更新')}"` },
+      { from: "message: 'No updates available'", to: `message: '${toAsciiUnicode('当前已是最新版本。')}'` },
+      { from: 'message: "No updates available"', to: `message: "${toAsciiUnicode('当前已是最新版本。')}"` },
+      { from: "buttons: ['OK']", to: `buttons: ['${toAsciiUnicode('确定')}']` },
+      { from: 'buttons: ["OK"]', to: `buttons: ["${toAsciiUnicode('确定')}"]` },
+      // 通用与历史提示文案
       { from: 'Check for Updates...', to: '检查更新...' },
       { from: 'Check for updates...', to: '检查更新...' },
+      { from: 'Checking for Updates...', to: '正在检查更新...' },
       { from: 'Checking for updates...', to: '正在检查更新...' },
-      { from: 'Update Available', to: '发现新版本' },
-      { from: 'Update available', to: '发现新版本' },
-      { from: 'A new version of Antigravity is available.', to: 'Antigravity 有可用新版本。' },
-      { from: 'A new version is available.', to: '有可用新版本。' },
+      { from: 'Downloading Update...', to: '正在下载更新...' },
       { from: 'Downloading update...', to: '正在下载更新...' },
-      { from: 'Update Downloaded', to: '更新已下载完成' },
-      { from: 'Update ready to install', to: '更新已就绪，准备安装' },
-      { from: 'Update ready', to: '更新就绪' },
       { from: 'Restart to Update', to: '重启以应用更新' },
       { from: 'Restart and Update', to: '重启并更新' },
       { from: 'Restart Now', to: '立即重启' },
       { from: 'Remind Me Later', to: '稍后提醒我' },
       { from: 'Install and Restart', to: '安装并重启' },
+      { from: 'Update Available', to: '发现新版本' },
+      { from: 'Update available', to: '发现新版本' },
+      { from: 'A new version of Antigravity is available.', to: 'Antigravity 有可用新版本。' },
+      { from: 'A new version is available.', to: '有可用新版本。' },
+      { from: 'Update Downloaded', to: '更新已下载完成' },
+      { from: 'Update ready to install', to: '更新已就绪，准备安装' },
+      { from: 'Update ready', to: '更新就绪' },
       { from: 'No updates available.', to: '当前已是最新版本。' },
+      { from: 'No updates available', to: '当前已是最新版本。' },
       { from: "You're up to date!", to: '当前已是最新版本！' },
       { from: 'Update Error', to: '更新检查出错' },
       { from: 'Failed to check for updates', to: '检查更新失败' },
@@ -125,6 +183,17 @@ const MODULE_PATCHES = {
   menu: {
     patterns: ['dist/menu.js', 'dist\\menu.js'],
     patch: (content) => applyReplacements(content, [
+      // 注入全局原生应用菜单递归汉化函数
+      {
+        from: 'electron_1.Menu.setApplicationMenu(menu);',
+        to: `const _tDict = { 'File': '${toAsciiUnicode('文件')}', 'Edit': '${toAsciiUnicode('编辑')}', 'View': '${toAsciiUnicode('视图')}', 'Window': '${toAsciiUnicode('窗口')}', 'Help': '${toAsciiUnicode('帮助')}', 'About Antigravity': '${toAsciiUnicode('关于 Antigravity')}', 'Preferences': '${toAsciiUnicode('偏好设置')}', 'Hide Antigravity': '${toAsciiUnicode('隐藏 Antigravity')}', 'Hide Others': '${toAsciiUnicode('隐藏其他')}', 'Show All': '${toAsciiUnicode('显示全部')}', 'Quit Antigravity': '${toAsciiUnicode('退出 Antigravity')}', 'Quit': '${toAsciiUnicode('退出')}', 'Undo': '${toAsciiUnicode('撤消')}', 'Redo': '${toAsciiUnicode('重做')}', 'Cut': '${toAsciiUnicode('剪切')}', 'Copy': '${toAsciiUnicode('复制')}', 'Paste': '${toAsciiUnicode('粘贴')}', 'Paste and Match Style': '${toAsciiUnicode('粘贴并匹配样式')}', 'Select All': '${toAsciiUnicode('全选')}', 'Delete': '${toAsciiUnicode('删除')}', 'Minimize': '${toAsciiUnicode('最小化')}', 'Zoom': '${toAsciiUnicode('缩放')}', 'Close Window': '${toAsciiUnicode('关闭窗口')}', 'Close': '${toAsciiUnicode('关闭')}', 'Bring All to Front': '${toAsciiUnicode('前置全部窗口')}', 'Reload': '${toAsciiUnicode('重新加载')}', 'Force Reload': '${toAsciiUnicode('强制重新加载')}', 'Toggle Developer Tools': '${toAsciiUnicode('切换开发者工具')}', 'Toggle Full Screen': '${toAsciiUnicode('切换全屏')}', 'Actual Size': '${toAsciiUnicode('实际大小')}', 'Reset Zoom': '${toAsciiUnicode('重置缩放')}', 'Zoom In': '${toAsciiUnicode('放大')}', 'Zoom Out': '${toAsciiUnicode('缩小')}', 'New Window': '${toAsciiUnicode('新建窗口')}', 'Docs': '${toAsciiUnicode('官方文档')}' }; const _locMenu = (m) => { m.items?.forEach((item) => { if (item.label && _tDict[item.label]) item.label = _tDict[item.label]; if (item.submenu) _locMenu(item.submenu); }); }; _locMenu(menu); electron_1.Menu.setApplicationMenu(menu);`
+      },
+      // 菜单项特定文案
+      { from: "label: 'New Window'", to: `label: '${toAsciiUnicode('新建窗口')}'` },
+      { from: 'label: "New Window"', to: `label: "${toAsciiUnicode('新建窗口')}"` },
+      { from: "label: 'Docs'", to: `label: '${toAsciiUnicode('官方文档')}'` },
+      { from: 'label: "Docs"', to: `label: "${toAsciiUnicode('官方文档')}"` },
+      // 快捷键与标准菜单回退
       { from: '&File', to: '文件(&F)' },
       { from: '&Edit', to: '编辑(&E)' },
       { from: '&View', to: '视图(&V)' },

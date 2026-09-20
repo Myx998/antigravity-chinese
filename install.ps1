@@ -167,6 +167,10 @@ if ($uniqueProcesses -and $uniqueProcesses.Count -gt 0) {
             Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
         } catch {}
     }
+    try {
+        taskkill.exe /F /IM language_server.exe /T 2>$null | Out-Null
+        taskkill.exe /F /IM antigravity.exe /T 2>$null | Out-Null
+    } catch {}
     Start-Sleep -Seconds 1
 }
 
@@ -180,6 +184,8 @@ function Clear-AntigravityV8Cache {
             "Code Cache",
             "GPUCache",
             "DawnCache",
+            "DawnGraphiteCache",
+            "DawnWebGPUCache",
             "Service Worker\CacheStorage",
             "Service Worker\ScriptCache"
         )

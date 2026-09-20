@@ -952,5 +952,21 @@
   "Bundled Hooks": "内置钩子",
   "User Skills": "用户技能",
   "Workspace Skills": "工作区技能",
-  "Workspace Rules": "工作区规则"
+  "Workspace Rules": "工作区规则",
+  "Terminal Command Auto-Execution": "终端命令自动执行",
+  "terminal command auto execution": "终端命令自动执行",
+  "terminal command auto-execution": "终端命令自动执行",
+  "Outside of workspace file access policy": "工作区外文件访问策略",
+  "outside of folders file access policy": "工作区外文件访问策略",
+  "outside of workspace file access policy": "工作区外文件访问策略",
+  "User review required": "需要用户审查",
+  "Automated tests": "自动化测试",
+  "Manual verification": "人工验证",
+  "Open questions": "待解决问题",
+  "Verification plan": "验证计划",
+  "Proposed changes": "提议的变更",
+  "Plan execution": "计划执行",
+  "Approve plan": "批准计划",
+  "Reject plan": "拒绝计划",
+  "Require review": "需要审查"
 }

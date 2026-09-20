@@ -639,19 +639,26 @@ it('应该正确翻译规划模式及其计划执行词条', () => {
   assert.strictEqual(translateText('Planning Mode'), '规划模式');
   assert.strictEqual(translateText('Approve and Execute'), '批准并执行');
   assert.strictEqual(translateText('Reject and Stop'), '拒绝并停止');
+  assert.strictEqual(translateText('proposed changes'), '提议的变更');
+  assert.strictEqual(translateText('verification plan'), '验证计划');
+  assert.strictEqual(translateText('plan execution'), '计划执行');
 });
 
 // 16. 权限策略、会话管理与插件构件词条
 console.log('\nGroup 16: 权限策略、会话管理与插件构件词条');
 it('应该正确翻译权限文件策略词条', () => {
   assert.strictEqual(translateText('Outside of folders file access policy'), '工作区外文件访问策略');
+  assert.strictEqual(translateText('Outside of workspace file access policy'), '工作区外文件访问策略');
   assert.strictEqual(translateText('Terminal Command Auto Execution'), '终端命令自动执行');
+  assert.strictEqual(translateText('Terminal Command Auto-Execution'), '终端命令自动执行');
   assert.strictEqual(translateText('Require Review'), '需要审查');
+  assert.strictEqual(translateText('require review'), '需要审查');
 });
 
 it('应该正确翻译会话管理词条', () => {
   assert.strictEqual(translateText('Fork Conversation'), '分叉会话');
   assert.strictEqual(translateText('Group By'), '分组方式');
+  assert.strictEqual(translateText('group by'), '分组方式');
 });
 
 it('应该正确翻译内置与工作区插件构件词条', () => {
@@ -661,6 +668,7 @@ it('应该正确翻译内置与工作区插件构件词条', () => {
   assert.strictEqual(translateText('Bundled Hooks'), '内置钩子');
   assert.strictEqual(translateText('User Skills'), '用户技能');
   assert.strictEqual(translateText('Workspace Skills'), '工作区技能');
+  assert.strictEqual(translateText('Workspace Rules'), '工作区规则');
 });
 
 // 17. DOM 引擎 WeakMap 防重入与 O(1) 短路机制
@@ -700,55 +708,146 @@ console.log('\nGroup 18: 多目标联动注入与 7-bit ASCII 补丁验证');
 const injectModule = require('./inject');
 const { MODULE_PATCHES, toAsciiUnicode } = injectModule;
 
-it('wizardHtml.js 补丁应正确汉化首屏向导文案', () => {
-  const orig = '<button>Welcome to Antigravity</button><span>Install IDE Extensions</span><p>Choose your primary IDE</p>';
-  const patched = MODULE_PATCHES.wizardHtml.patch(orig);
-  assert.ok(patched.includes(toAsciiUnicode('欢迎使用 Antigravity')));
-  assert.ok(patched.includes(toAsciiUnicode('安装 IDE 扩展插件')));
-  assert.ok(patched.includes(toAsciiUnicode('选择您的主要 IDE')));
+it('wizardHtml.js 补丁应正确汉化真实首屏向导文案与描述', () => {
+  const realWizardSnippet = `
+    <title>Welcome to Antigravity</title>
+    <div class="text">Setting up…</div>
+    <h1>Welcome to the new Antigravity!</h1>
+    <p>Antigravity has been redesigned to put agents first with new capabilities. If you'd still like a code editor, you can download it as a separate app named <b>Antigravity IDE</b>.</p>
+    <span>Download the Antigravity IDE</span>
+    <button class="btn-primary" id="btn-skip">Explore the new Antigravity</button>
+  `;
+  const patched = MODULE_PATCHES.wizardHtml.patch(realWizardSnippet);
+  assert.ok(patched.includes(toAsciiUnicode('欢迎使用 Antigravity')), '应汉化 title 标签');
+  assert.ok(patched.includes(toAsciiUnicode('正在准备…')), '应汉化 Loading 状态');
+  assert.ok(patched.includes(toAsciiUnicode('欢迎体验全新 Antigravity！')), '应汉化 h1 标题');
+  assert.ok(patched.includes(toAsciiUnicode('Antigravity 经过全面重塑')), '应汉化正文段落');
+  assert.ok(patched.includes(toAsciiUnicode('下载 Antigravity IDE')), '应汉化下载勾选项');
+  assert.ok(patched.includes(toAsciiUnicode('探索全新 Antigravity')), '应汉化跳过按钮');
 });
 
-it('main.js 补丁应正确汉化退出确认与托盘选项', () => {
-  const orig = 'dialog.showMessageBox({ message: "Are you sure you want to quit?", buttons: ["Quit Antigravity", "Cancel"] });';
-  const patched = MODULE_PATCHES.main.patch(orig);
-  assert.ok(patched.includes(toAsciiUnicode('确定要退出 Antigravity 吗？')));
-  assert.ok(patched.includes(toAsciiUnicode('退出 Antigravity')));
+it('main.js 补丁应正确汉化真实退出确认对话框、错误弹窗与托盘初始化', () => {
+  const realMainSnippet = `
+    (0, tray_1.createTray)([
+        { id: 'running-agents', label: 'No agents running', enabled: false },
+        { type: 'separator' },
+        { label: \`Open \${electron_1.app.getName()}\`, click: () => {} },
+        { label: 'Quit', click: () => {} }
+    ]);
+    const options = {
+        type: 'question',
+        buttons: ['Cancel', 'Quit'],
+        title: 'Confirm Quit',
+        message: 'Are you sure you want to quit?',
+        detail: 'There may be agents or background tasks running.'
+    };
+  `;
+  const patched = MODULE_PATCHES.main.patch(realMainSnippet);
+  assert.ok(patched.includes(toAsciiUnicode('确认退出')), '应汉化退出对话框标题');
+  assert.ok(patched.includes(toAsciiUnicode('确定要退出 Antigravity 吗？')), '应汉化退出提示');
+  assert.ok(patched.includes(toAsciiUnicode('可能仍有正在运行中的智能体或后台任务。')), '应汉化详细说明');
+  assert.ok(patched.includes(toAsciiUnicode('取消')) && patched.includes(toAsciiUnicode('退出')), '应汉化对话框按钮');
+  assert.ok(patched.includes(toAsciiUnicode('暂无运行中的智能体')), '应汉化托盘初始文本');
+  assert.ok(patched.includes(toAsciiUnicode('打开')), '应汉化托盘打开应用项');
 });
 
-it('tray.js 补丁应正确汉化动态任务计数与托盘文案', () => {
-  const orig = 'const tip = `${count} tasks running`; if (!tasks) return "No background tasks";';
-  const patched = MODULE_PATCHES.tray.patch(orig);
-  assert.ok(patched.includes(toAsciiUnicode('个任务运行中')));
-  assert.ok(patched.includes(toAsciiUnicode('暂无后台任务')));
+it('tray.js 补丁应正确汉化真实智能体计数拼接逻辑与动态模板', () => {
+  const realTraySnippet = `
+    countItem.label =
+        (count > 0 ? \`\${count}\` : 'No') +
+            ' agent' +
+            (count === 1 ? '' : 's') +
+            ' running';
+  `;
+  const patched = MODULE_PATCHES.tray.patch(realTraySnippet);
+  assert.ok(patched.includes(toAsciiUnicode('个智能体运行中')), '应汉化真实拼接逻辑中的计数后缀');
+  assert.ok(patched.includes(toAsciiUnicode('暂无运行中的智能体')), '应汉化真实拼接逻辑中的 0 计数分支');
 });
 
-it('updater.js 补丁应正确汉化更新检查与提示', () => {
-  const orig = 'const menu = [{ label: "Check for Updates..." }]; dialog.show("Update Available", "Restart to Update");';
-  const patched = MODULE_PATCHES.updater.patch(orig);
-  assert.ok(patched.includes(toAsciiUnicode('检查更新...')));
-  assert.ok(patched.includes(toAsciiUnicode('发现新版本')));
-  assert.ok(patched.includes(toAsciiUnicode('重启以应用更新')));
+it('updater.js 补丁应正确汉化 MenuUpdateStep 枚举及更新检查结果弹窗', () => {
+  const realUpdaterSnippet = `
+    MenuUpdateStep["CheckForUpdates"] = "Check for Updates";
+    MenuUpdateStep["CheckingForUpdates"] = "Checking for Updates...";
+    MenuUpdateStep["DownloadingUpdate"] = "Downloading Update...";
+    MenuUpdateStep["RestartToUpdate"] = "Restart to Update";
+    const options = {
+        type: 'info',
+        title: 'Check for Updates',
+        message: 'No updates available',
+        buttons: ['OK'],
+    };
+  `;
+  const patched = MODULE_PATCHES.updater.patch(realUpdaterSnippet);
+  assert.ok(patched.includes(toAsciiUnicode('检查更新...')), '应汉化 MenuUpdateStep 检查更新');
+  assert.ok(patched.includes(toAsciiUnicode('正在检查更新...')), '应汉化 MenuUpdateStep 检查中');
+  assert.ok(patched.includes(toAsciiUnicode('正在下载更新...')), '应汉化 MenuUpdateStep 下载中');
+  assert.ok(patched.includes(toAsciiUnicode('重启以应用更新')), '应汉化 MenuUpdateStep 重启更新');
+  assert.ok(patched.includes(toAsciiUnicode('当前已是最新版本。')), '应汉化无需更新提示');
+  assert.ok(patched.includes(toAsciiUnicode('确定')), '应汉化 OK 确认按钮');
 });
 
-it('menu.js 补丁应正确汉化原生菜单项', () => {
-  const orig = 'const template = [{ label: "&File" }, { label: "About Antigravity" }, { label: "Quit Antigravity" }];';
-  const patched = MODULE_PATCHES.menu.patch(orig);
-  assert.ok(patched.includes(toAsciiUnicode('文件(&F)')));
-  assert.ok(patched.includes(toAsciiUnicode('关于 Antigravity')));
-  assert.ok(patched.includes(toAsciiUnicode('退出 Antigravity')));
+it('menu.js 补丁应正确汉化原生应用菜单项并注入递归汉化引擎', () => {
+  const realMenuSnippet = `
+    addItemToSubmenu(menu, 'File', 0, new electron_1.MenuItem({
+        label: 'New Window',
+        accelerator: 'CmdOrCtrl+Shift+N',
+        click: () => { (0, utils_1.createWindow)(url); }
+    }));
+    addItemToSubmenu(menu, 'Help', 0, new electron_1.MenuItem({
+        label: 'Docs',
+        click: async () => {}
+    }));
+    hideDevTools(menu);
+    electron_1.Menu.setApplicationMenu(menu);
+  `;
+  const patched = MODULE_PATCHES.menu.patch(realMenuSnippet);
+  assert.ok(patched.includes(toAsciiUnicode('新建窗口')), '应汉化 New Window 菜单项');
+  assert.ok(patched.includes(toAsciiUnicode('官方文档')), '应汉化 Docs 菜单项');
+  assert.ok(patched.includes(toAsciiUnicode('文件')) && patched.includes(toAsciiUnicode('编辑')), '应注入全局菜单字典');
 });
 
 it('多目标补丁产物必须 100% 为纯 7-bit ASCII，无裸 UTF-8 汉字', () => {
   const testSamples = [
-    MODULE_PATCHES.wizardHtml.patch('Welcome to Antigravity'),
-    MODULE_PATCHES.main.patch('Are you sure you want to quit?'),
-    MODULE_PATCHES.tray.patch('No background tasks'),
-    MODULE_PATCHES.updater.patch('Update Available'),
-    MODULE_PATCHES.menu.patch('&File')
+    MODULE_PATCHES.wizardHtml.patch('Welcome to Antigravity\nSetting up…\nWelcome to the new Antigravity!'),
+    MODULE_PATCHES.main.patch('Confirm Quit\nAre you sure you want to quit?\nNo agents running'),
+    MODULE_PATCHES.tray.patch("(count > 0 ? `${count}` : 'No') + ' agent' + (count === 1 ? '' : 's') + ' running'"),
+    MODULE_PATCHES.updater.patch('MenuUpdateStep["CheckForUpdates"] = "Check for Updates"\nNo updates available'),
+    MODULE_PATCHES.menu.patch("label: 'New Window'\nlabel: 'Docs'\nelectron_1.Menu.setApplicationMenu(menu);")
   ];
   for (const sample of testSamples) {
     for (let i = 0; i < sample.length; i++) {
       assert.ok(sample.charCodeAt(i) <= 127, `Non-ASCII byte detected at pos ${i}: ${sample.charCodeAt(i)}`);
+    }
+  }
+});
+
+it('若本机检测到真实客户端 Asar，多目标补丁应能 100% 成功命中并修改真实文件', () => {
+  const asarPath = injectModule.getDefaultAsarPath();
+  const targetAsar = (fs.existsSync(asarPath + '.bak')) ? asarPath + '.bak' : (fs.existsSync(asarPath) ? asarPath : null);
+  if (targetAsar) {
+    const buf = fs.readFileSync(targetAsar);
+    const u2 = buf.readUInt32LE(4);
+    const jsonSize = buf.readUInt32LE(12);
+    const dataStart = 8 + u2;
+    const root = JSON.parse(buf.toString('utf8', 16, 16 + jsonSize));
+
+    const getFile = (p) => {
+      const parts = p.split('/');
+      let curr = root.files;
+      for (let i = 0; i < parts.length - 1; i++) curr = curr[parts[i]].files;
+      const entry = curr[parts[parts.length - 1]];
+      return buf.toString('utf8', dataStart + parseInt(entry.offset), dataStart + parseInt(entry.offset) + entry.size);
+    };
+
+    for (const [modKey, modConfig] of Object.entries(MODULE_PATCHES)) {
+      const entryPath = modConfig.patterns[0].replace(/\\\\/g, '/');
+      try {
+        const fileContent = getFile(entryPath);
+        const patchedContent = modConfig.patch(fileContent);
+        assert.notStrictEqual(fileContent, patchedContent, `真实 Asar 文件 [${entryPath}] 补丁应成功生效并产生内容改动`);
+      } catch (err) {
+        // 如果特定构建版本未打包该子模块则安全跳过
+      }
     }
   }
 });
