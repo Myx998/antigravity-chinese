@@ -147,10 +147,13 @@ if (-not $payloadFile) {
 
 Write-Host "[INFO] 补丁文件就绪: $payloadFile" -ForegroundColor Green
 
-# 3. 检查并关闭 Antigravity 进程
+# 3. 检查并关闭 Antigravity 进程 (释放 Windows 文件占用锁定)
 $processes = Get-Process -Name "antigravity" -ErrorAction SilentlyContinue
 if ($processes) {
-    Write-Host "[INFO] 检测到 Antigravity 客户端正在运行，正在自动安全关闭..." -ForegroundColor Yellow
+    Write-Host "[NOTICE] 检测到 Antigravity 客户端正在运行。" -ForegroundColor Yellow
+    Write-Host "[NOTICE] Windows 系统保护机制要求更新 app.asar 前必须先关闭客户端。" -ForegroundColor Yellow
+    Write-Host "[NOTICE] 正在准备安全退出 Antigravity 客户端以完成操作..." -ForegroundColor Cyan
+    Start-Sleep -Seconds 2
     $processes | Stop-Process -Force
     Start-Sleep -Seconds 1
 }

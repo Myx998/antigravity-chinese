@@ -50,7 +50,10 @@ if (-not (Test-Path $backupFile)) {
 
 $processes = Get-Process -Name "antigravity" -ErrorAction SilentlyContinue
 if ($processes) {
-    Write-Host "[INFO] 正在关闭 Antigravity 进程..." -ForegroundColor Yellow
+    Write-Host "[NOTICE] 检测到 Antigravity 客户端正在运行。" -ForegroundColor Yellow
+    Write-Host "[NOTICE] Windows 系统保护机制要求还原核心文件前必须先退出客户端。" -ForegroundColor Yellow
+    Write-Host "[NOTICE] 正在准备安全退出 Antigravity 客户端以完成操作..." -ForegroundColor Cyan
+    Start-Sleep -Seconds 2
     $processes | Stop-Process -Force
     Start-Sleep -Seconds 1
 }
