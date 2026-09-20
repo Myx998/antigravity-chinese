@@ -78,6 +78,17 @@ function createDispatcher(dictionary, lowerDictionary) {
       return normalized.replace(trimmed, dynamicMatch);
     }
 
+    // 7. 项目符号/列表符前缀剥离回退 (Bullet prefix fallback, e.g. "• ...", "- ...", "* ...")
+    const bulletMatch = trimmed.match(/^([-*•]\s+)(.+)$/);
+    if (bulletMatch) {
+      const pfx = bulletMatch[1];
+      const body = bulletMatch[2].trim();
+      const transBody = dictionary[body] || lowerDictionary[body.toLowerCase()] || matchDynamicPatterns(body);
+      if (transBody) {
+        return normalized.replace(trimmed, `${pfx}${transBody}`);
+      }
+    }
+
     return null;
   };
 }

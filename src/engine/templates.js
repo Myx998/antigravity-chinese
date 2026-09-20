@@ -6,6 +6,9 @@
 function formatLimitDuration(str) {
   if (!str) return '';
   return str
+    .replace(/[.,;!?]+$/g, '')
+    .replace(/\bmonths?\b/gi, '个月')
+    .replace(/\bweeks?\b/gi, '周')
     .replace(/\bdays?\b/gi, '天')
     .replace(/\bhours?\b/gi, '小时')
     .replace(/\bminutes?\b/gi, '分钟')
@@ -18,36 +21,65 @@ function formatLimitDuration(str) {
 
 function formatLimitName(name) {
   if (!name) return '额度';
-  const n = name.toLowerCase().trim();
-  if (n === '5-hour limit' || n === '5-hour') return '5小时额度';
+  const clean = name.replace(/^(?:your|the|a)\s+/i, '').trim();
+  const n = clean.toLowerCase();
+  if (n === '5-hour limit' || n === '5-hour' || n === 'five-hour limit' || n === 'five hour limit') return '5小时额度';
   if (n === 'weekly limit' || n === 'weekly') return '周度额度';
   if (n === 'daily limit' || n === 'daily') return '每日额度';
+  if (n === 'hourly limit' || n === 'hourly') return '每小时额度';
   if (n === 'monthly limit' || n === 'monthly') return '月度额度';
   const m = n.match(/^(\d+)-hour(?:\s+limit)?$/);
   if (m) return `${m[1]}小时额度`;
   const md = n.match(/^(\d+)-day(?:\s+limit)?$/);
   if (md) return `${md[1]}天额度`;
-  return name.replace(/\blimit\b/i, '额度').trim();
+  const mw = n.match(/^(\d+)-week(?:\s+limit)?$/);
+  if (mw) return `${mw[1]}周额度`;
+  return clean.replace(/\blimit\b/i, '额度').trim();
 }
 
 const DYNAMIC_TEMPLATES = [
   // 1. 配额与限额动态时间刷新模板
+  // 1.1 复合完整句（hit + so the ... does not apply + refresh + [credits]）
   {
-    regex: /^You have used some of your (.+? limit), it will (fully )?refresh in (.+?)\.?$/i,
-    format: (m) => `您已使用部分${formatLimitName(m[1])}，将在 ${formatLimitDuration(m[3])} 后${m[2] ? '完全' : ''}刷新`
+    regex: /^You have (?:hit|reached|exceeded|used up) your (.+? limit), so (?:the )?(.+? limit) does not currently apply[.,;]\s+(?:Your (?:.+? limit)|It) will (fully )?refresh in (.+?)\.?(?:\s+(If on a supported paid plan, you can use AI credits in the interim\.?))?$/i,
+    format: (m) => `您已达到${formatLimitName(m[1])}，因此${formatLimitName(m[2])}当前不适用。您的${formatLimitName(m[1])}将在 ${formatLimitDuration(m[4])} 后${m[3] ? '完全' : ''}刷新${m[5] ? '。若使用的是支持的付费计划，期间可使用 AI 信用点。' : ''}`
   },
+  // 1.2 复合中句（hit + refresh + [credits]）
   {
-    regex: /^You have (?:hit|reached) your (.+? limit), so the weekly limit does not currently apply\. Your (?:.+? limit) will (fully )?refresh in (.+?)\.?(?:\s+(If on a supported paid plan, you can use AI credits in the interim\.?))?$/i,
-    format: (m) => `您已达到${formatLimitName(m[1])}，因此周度额度当前不适用。您的${formatLimitName(m[1])}将在 ${formatLimitDuration(m[3])} 后${m[2] ? '完全' : ''}刷新${m[4] ? '。若使用的是支持的付费计划，期间可使用 AI 信用点。' : ''}`
-  },
-  {
-    regex: /^You have (?:hit|reached) your (.+? limit), it will (fully )?refresh in (.+?)\.?(?:\s+(If on a supported paid plan, you can use AI credits in the interim\.?))?$/i,
+    regex: /^You have (?:hit|reached|exceeded|used up) your (.+? limit)[.,;]\s+(?:it|your (?:.+? limit)) will (fully )?refresh in (.+?)\.?(?:\s+(If on a supported paid plan, you can use AI credits in the interim\.?))?$/i,
     format: (m) => `您已达到${formatLimitName(m[1])}，将在 ${formatLimitDuration(m[3])} 后${m[2] ? '完全' : ''}刷新${m[4] ? '。若使用的是支持的付费计划，期间可使用 AI 信用点。' : ''}`
   },
+  // 1.3 used some of 复合句
   {
-    regex: /^Your (.+? limit) will (fully )?refresh in (.+?)\.?$/i,
-    format: (m) => `您的${formatLimitName(m[1])}将在 ${formatLimitDuration(m[3])} 后${m[2] ? '完全' : ''}刷新`
+    regex: /^You have used some of your (.+? limit)[.,;]\s+it will (fully )?refresh in (.+?)\.?$/i,
+    format: (m) => `您已使用部分${formatLimitName(m[1])}，将在 ${formatLimitDuration(m[3])} 后${m[2] ? '完全' : ''}刷新`
   },
+  // 1.4 独立 refresh 句（带或不带 credits）
+  {
+    regex: /^Your (.+? limit) will (fully )?refresh in (.+?)\.?(?:\s+(If on a supported paid plan, you can use AI credits in the interim\.?))?$/i,
+    format: (m) => `您的${formatLimitName(m[1])}将在 ${formatLimitDuration(m[3])} 后${m[2] ? '完全' : ''}刷新${m[4] ? '。若使用的是支持的付费计划，期间可使用 AI 信用点。' : ''}`
+  },
+  // 1.5 独立 hit 句带 not apply（分拆节点场景）
+  {
+    regex: /^You have (?:hit|reached|exceeded|used up) your (.+? limit), so (?:the )?(.+? limit) does not currently apply\.?$/i,
+    format: (m) => `您已达到${formatLimitName(m[1])}，因此${formatLimitName(m[2])}当前不适用。`
+  },
+  // 1.6 独立 hit 句
+  {
+    regex: /^You have (?:hit|reached|exceeded|used up) your (.+? limit)\.?$/i,
+    format: (m) => `您已达到${formatLimitName(m[1])}。`
+  },
+  // 1.7 独立 used some of 句
+  {
+    regex: /^You have used some of your (.+? limit)\.?$/i,
+    format: (m) => `您已使用部分${formatLimitName(m[1])}。`
+  },
+  // 1.8 独立 not apply 句
+  {
+    regex: /^(?:so )?(?:the )?(.+? limit) does not currently apply\.?$/i,
+    format: (m) => `因此${formatLimitName(m[1])}当前不适用。`
+  },
+  // 1.9 独立 credits 提示句
   {
     regex: /^If on a supported paid plan, you can use AI credits in the interim\.?$/i,
     format: () => `若使用的是支持的付费计划，期间可使用 AI 信用点。`

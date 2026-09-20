@@ -152,63 +152,71 @@ const TRANSLATIONS = {
 const extractedFile = path.join(__dirname, 'extracted_skills.json');
 let extractedSkills = [];
 
-if (fs.existsSync(extractedFile)) {
+const targetDirs = [
+  path.join(process.env.USERPROFILE || 'C:\\Users\\myxge', '.gemini/config/plugins'),
+  path.join(process.env.USERPROFILE || 'C:\\Users\\myxge', '.gemini/antigravity/builtin/skills')
+];
+
+function findSkillFiles(dir) {
+  const results = [];
+  if (!fs.existsSync(dir)) return results;
+  function traverse(current) {
+    let entries;
+    try { entries = fs.readdirSync(current, { withFileTypes: true }); } catch (e) { return; }
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) traverse(fullPath);
+      else if (entry.isFile() && entry.name.toLowerCase() === 'skill.md') results.push(fullPath);
+    }
+  }
+  traverse(dir);
+  return results;
+}
+
+function parseFrontmatter(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!match) return null;
+    const yaml = match[1];
+    let name = null;
+    let description = null;
+    const nameMatch = yaml.match(/^name:\s*(.+)$/m);
+    if (nameMatch) name = nameMatch[1].trim().replace(/^['"]|['"]$/g, '');
+    const descMatch = yaml.match(/^description:\s*(?:([>|]-?)\r?\n)?([\s\S]*?)(?=\n[a-zA-Z0-9_-]+:|$)/m);
+    if (descMatch) {
+      if (descMatch[1]) {
+        description = descMatch[2].split(/\r?\n/).map(l => l.replace(/^\s+/, '')).filter(Boolean).join(' ').trim();
+      } else {
+        description = descMatch[2].trim().replace(/^['"]|['"]$/g, '');
+      }
+    }
+    return { filePath, name, description };
+  } catch (e) {
+    return null;
+  }
+}
+
+// 优先进行实时扫描，确保新安装的插件能被实时发现并录入
+const scannedSkills = [];
+for (const dir of targetDirs) {
+  const files = findSkillFiles(dir);
+  for (const f of files) {
+    const meta = parseFrontmatter(f);
+    if (meta && meta.description) scannedSkills.push(meta);
+  }
+}
+
+if (scannedSkills.length > 0) {
+  console.log(`[SCAN] Real-time scanned ${scannedSkills.length} skills from local plugin directories.`);
+  extractedSkills = scannedSkills;
+  fs.writeFileSync(extractedFile, JSON.stringify(extractedSkills, null, 2), 'utf8');
+} else if (fs.existsSync(extractedFile)) {
+  console.log('[CACHE] Using cached extracted_skills.json...');
   extractedSkills = JSON.parse(fs.readFileSync(extractedFile, 'utf8'));
 } else {
-  console.log('[SCAN] extracted_skills.json not found, scanning target directories...');
-  const targetDirs = [
-    path.join(process.env.USERPROFILE || 'C:\\Users\\myxge', '.gemini/config/plugins'),
-    path.join(process.env.USERPROFILE || 'C:\\Users\\myxge', '.gemini/antigravity/builtin/skills')
-  ];
-
-  function findSkillFiles(dir) {
-    const results = [];
-    if (!fs.existsSync(dir)) return results;
-    function traverse(current) {
-      let entries;
-      try { entries = fs.readdirSync(current, { withFileTypes: true }); } catch (e) { return; }
-      for (const entry of entries) {
-        const fullPath = path.join(current, entry.name);
-        if (entry.isDirectory()) traverse(fullPath);
-        else if (entry.isFile() && entry.name.toLowerCase() === 'skill.md') results.push(fullPath);
-      }
-    }
-    traverse(dir);
-    return results;
-  }
-
-  function parseFrontmatter(filePath) {
-    try {
-      const content = fs.readFileSync(filePath, 'utf8');
-      const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-      if (!match) return null;
-      const yaml = match[1];
-      let name = null;
-      let description = null;
-      const nameMatch = yaml.match(/^name:\s*(.+)$/m);
-      if (nameMatch) name = nameMatch[1].trim().replace(/^['"]|['"]$/g, '');
-      const descMatch = yaml.match(/^description:\s*(?:([>|]-?)\r?\n)?([\s\S]*?)(?=\n[a-zA-Z0-9_-]+:|$)/m);
-      if (descMatch) {
-        if (descMatch[1]) {
-          description = descMatch[2].split(/\r?\n/).map(l => l.replace(/^\s+/, '')).filter(Boolean).join(' ').trim();
-        } else {
-          description = descMatch[2].trim().replace(/^['"]|['"]$/g, '');
-        }
-      }
-      return { filePath, name, description };
-    } catch (e) {
-      return null;
-    }
-  }
-
-  for (const dir of targetDirs) {
-    const files = findSkillFiles(dir);
-    for (const f of files) {
-      const meta = parseFrontmatter(f);
-      if (meta && meta.description) extractedSkills.push(meta);
-    }
-  }
-  fs.writeFileSync(extractedFile, JSON.stringify(extractedSkills, null, 2), 'utf8');
+  console.error('[FATAL] No skills found via scan or cache!');
+  process.exit(1);
 }
 
 console.log(`Extracted skills count: ${extractedSkills.length}`);
@@ -242,6 +250,25 @@ function addEntry(k, v) {
   }
 }
 
+function extractFirstSentence(str) {
+  if (!str) return null;
+  const protectedStr = str
+    .replace(/\be\.g\./gi, 'e___g')
+    .replace(/\bi\.e\./gi, 'i___e')
+    .replace(/\bvs\./gi, 'vs___')
+    .replace(/\betc\./gi, 'etc___');
+  const m = protectedStr.match(/^(.+?[.!?])(?:\s+[A-Z]|\s*$)/);
+  if (m) {
+    return m[1]
+      .replace(/e___g/g, 'e.g.')
+      .replace(/i___e/g, 'i.e.')
+      .replace(/vs___/g, 'vs.')
+      .replace(/etc___/g, 'etc.')
+      .trim();
+  }
+  return null;
+}
+
 for (const s of extractedSkills) {
   const zh = TRANSLATIONS[s.name];
   const origDesc = s.description;
@@ -253,18 +280,28 @@ for (const s of extractedSkills) {
   const normalizedDesc = origDesc.replace(/\s+/g, ' ').trim();
   addEntry(normalizedDesc, zh);
 
-  // 3. 去掉前导 "- " 或 "* "
-  const strippedPrefix = origDesc.replace(/^[-*]\s+/, '').trim();
+  // 3. 去掉前导 "- "、"* " 或 "• "
+  const strippedPrefix = origDesc.replace(/^[-*•]\s+/, '').trim();
   addEntry(strippedPrefix, zh);
 
-  const strippedNormalized = normalizedDesc.replace(/^[-*]\s+/, '').trim();
+  const strippedNormalized = normalizedDesc.replace(/^[-*•]\s+/, '').trim();
   addEntry(strippedNormalized, zh);
 
-  // 4. 如果包含首句，提取首句作为补充词条
-  const firstSentenceMatch = strippedNormalized.match(/^([^.!?]+[.!?])/);
-  if (firstSentenceMatch && firstSentenceMatch[1].length > 15 && firstSentenceMatch[1].length < strippedNormalized.length - 10) {
-    // 很多 UI 在列表项可能只截取首句展示
-    // 我们如果能对应首句，则也可以提供翻译
+  // 4. 如果包含首句，提取首句作为补充词条（适配紧凑 UI 列表只展示首句的场景）
+  const firstEn = extractFirstSentence(strippedNormalized);
+  if (firstEn && firstEn.length > 15 && firstEn.length < strippedNormalized.length - 10) {
+    const zhFirstMatch = zh.match(/^([^。！？]+[。！？])/);
+    const firstZh = zhFirstMatch ? zhFirstMatch[1].trim() : zh;
+    addEntry(firstEn, firstZh);
+    addEntry(firstEn.replace(/^[-*•]\s+/, '').trim(), firstZh);
+  }
+
+  // 5. 符号前缀与无标点容错映射
+  addEntry('• ' + strippedNormalized, zh);
+  addEntry('- ' + strippedNormalized, zh);
+  addEntry('* ' + strippedNormalized, zh);
+  if (strippedNormalized.endsWith('.')) {
+    addEntry(strippedNormalized.slice(0, -1).trim(), zh.replace(/。$/, ''));
   }
 }
 

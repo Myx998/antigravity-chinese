@@ -529,6 +529,36 @@ it('应该正确翻译独立短语 "If on a supported paid plan, you can use AI 
   assert.strictEqual(res, '若使用的是支持的付费计划，期间可使用 AI 信用点。');
 });
 
+it('应该正确翻译通用限额组合 "You have hit your weekly limit, so the 5-hour limit does not currently apply. Your weekly limit will refresh in 2 days, 4 hours."', () => {
+  const res = translateText('You have hit your weekly limit, so the 5-hour limit does not currently apply. Your weekly limit will refresh in 2 days, 4 hours.');
+  assert.strictEqual(res, '您已达到周度额度，因此5小时额度当前不适用。您的周度额度将在 2 天 4 小时 后刷新');
+});
+
+it('应该正确翻译动词变体 "You have reached your 5-hour limit, it will refresh in 3 hours, 57 minutes."', () => {
+  const res = translateText('You have reached your 5-hour limit, it will refresh in 3 hours, 57 minutes.');
+  assert.strictEqual(res, '您已达到5小时额度，将在 3 小时 57 分钟 后刷新');
+});
+
+it('应该正确翻译分拆独立子句 "You have hit your 5-hour limit, so the weekly limit does not currently apply."', () => {
+  const res = translateText('You have hit your 5-hour limit, so the weekly limit does not currently apply.');
+  assert.strictEqual(res, '您已达到5小时额度，因此周度额度当前不适用。');
+});
+
+it('应该正确翻译分拆独立子句 "You have hit your 5-hour limit."', () => {
+  const res = translateText('You have hit your 5-hour limit.');
+  assert.strictEqual(res, '您已达到5小时额度。');
+});
+
+it('应该正确翻译分拆独立子句 "so the 5-hour limit does not currently apply."', () => {
+  const res = translateText('so the 5-hour limit does not currently apply.');
+  assert.strictEqual(res, '因此5小时额度当前不适用。');
+});
+
+it('应该正确翻译分拆独立子句 "Your 5-hour limit will fully refresh in 3 hours, 57 minutes."', () => {
+  const res = translateText('Your 5-hour limit will fully refresh in 3 hours, 57 minutes.');
+  assert.strictEqual(res, '您的5小时额度将在 3 小时 57 分钟 后完全刷新');
+});
+
 // 13. 插件与技能系统全量说明汉化测试
 console.log('\nGroup 13: 插件与技能系统全量说明汉化');
 it('应该正确汉化 Android CLI 技能说明', () => {
@@ -546,6 +576,16 @@ it('应该正确汉化 BigQuery AI & ML 技能说明 (含前导横杠兼容)', (
   assert.ok(res && res.includes('BigQuery 内置机器学习'));
 });
 
+it('应该正确汉化带圆点项目符号 "• " 的技能说明', () => {
+  const res = translateText('• Uses Chrome DevTools via MCP for efficient debugging, troubleshooting and browser automation. Use when debugging web pages, automating browser interactions, analyzing performance, or inspecting network requests. This skill does not apply to --slim mode (MCP configuration).');
+  assert.ok(res && res.includes('Chrome DevTools'));
+});
+
+it('应该正确汉化首句提取截断的技能说明', () => {
+  const res = translateText('Uses Chrome DevTools MCP for accessibility (a11y) debugging and auditing based on web.dev guidelines.');
+  assert.ok(res && res.includes('Chrome DevTools MCP 进行无障碍可访问性'));
+});
+
 it('应该保证本地所有 126 个已注册技能的官方 description 均被 100% 成功汉化', () => {
   const extractedFile = path.resolve(__dirname, 'extracted_skills.json');
   if (fs.existsSync(extractedFile)) {
@@ -560,6 +600,28 @@ it('应该保证本地所有 126 个已注册技能的官方 description 均被 
     }
     assert.strictEqual(unlocalizedCount, 0, `存在 ${unlocalizedCount} 个未汉化的技能描述`);
   }
+});
+
+// 14. 设置面板与配额界面核心词条静态匹配测试
+console.log('\nGroup 14: 设置面板与配额界面核心词条静态匹配');
+it('应该正确翻译 "AI Credit Overages"', () => {
+  assert.strictEqual(translateText('AI Credit Overages'), 'AI 信用点超额扣费');
+});
+
+it('应该正确翻译 "Available AI Credits:"', () => {
+  assert.strictEqual(translateText('Available AI Credits:'), '可用 AI 信用点：');
+});
+
+it('应该正确翻译 "Five Hour Limit Remaining"', () => {
+  assert.strictEqual(translateText('Five Hour Limit Remaining'), '5小时剩余额度');
+});
+
+it('应该正确翻译 "Installed Skills"', () => {
+  assert.strictEqual(translateText('Installed Skills'), '已安装技能');
+});
+
+it('应该正确翻译 "Agent Security Settings"', () => {
+  assert.strictEqual(translateText('Agent Security Settings'), '智能体安全设置');
 });
 
 console.log('\n----------------------------------------------------');
