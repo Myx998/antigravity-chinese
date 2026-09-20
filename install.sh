@@ -117,9 +117,16 @@ if [ ! -f "$BACKUP_ASAR" ]; then
 fi
 
 # 5. 执行 Asar 动态注入
-if command -v node >/dev/null 2>&1; then
+INJECT_JS=""
+if [ -f "$SCRIPT_DIR/scripts/inject.js" ]; then
+    INJECT_JS="$SCRIPT_DIR/scripts/inject.js"
+elif [ -f "scripts/inject.js" ]; then
+    INJECT_JS="$(pwd)/scripts/inject.js"
+fi
+
+if command -v node >/dev/null 2>&1 && [ -n "$INJECT_JS" ]; then
     echo "[ENGINE] 正在使用 Node.js 执行内存级注入..."
-    node "$SCRIPT_DIR/scripts/inject.js" "$TARGET_ASAR" "$PAYLOAD_FILE"
+    node "$INJECT_JS" "$TARGET_ASAR" "$PAYLOAD_FILE"
 elif command -v python3 >/dev/null 2>&1; then
     echo "[ENGINE] 正在使用 Python3 执行 Asar 内存注入..."
     python3 - <<EOF

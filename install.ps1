@@ -77,11 +77,11 @@ if ((Test-PathNeedsAdmin $TargetAsar) -and (-not (Test-IsAdmin))) {
 }
 
 # 2. 查找或远程拉取 Payload 补丁文件 (支持管道一行命令远程极速安装)
+$scriptDir = if ($MyInvocation.MyCommand.Path) { Split-Path -Parent $MyInvocation.MyCommand.Path } else { "" }
 $payloadFile = ""
 
 # 2.1 检查脚本同级或当前工作区目录
-if ($MyInvocation.MyCommand.Path) {
-    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+if ($scriptDir) {
     $cand = Join-Path $scriptDir "dist\patch-payload.js"
     if (Test-Path $cand) {
         $payloadFile = $cand
@@ -165,9 +165,14 @@ if (-not (Test-Path $backupFile)) {
 
 # 5. 执行注入
 $nodeInstalled = Get-Command "node" -ErrorAction SilentlyContinue
-$injectScript = Join-Path $scriptDir "scripts\inject.js"
+$injectScript = ""
+if ($scriptDir -and (Test-Path (Join-Path $scriptDir "scripts\inject.js"))) {
+    $injectScript = Join-Path $scriptDir "scripts\inject.js"
+} elseif (Test-Path "scripts\inject.js") {
+    $injectScript = (Resolve-Path "scripts\inject.js").Path
+}
 
-if ($nodeInstalled -and (Test-Path $injectScript)) {
+if ($nodeInstalled -and $injectScript) {
     Write-Host "[ENGINE] 正在使用 Node.js 高性能引擎执行注入..." -ForegroundColor Cyan
     & node $injectScript $TargetAsar $payloadFile
     if ($LASTEXITCODE -ne 0) {
