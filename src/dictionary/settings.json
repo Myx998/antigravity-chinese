@@ -163,5 +163,21 @@
   "Toggle Primary Side Bar": "切换主侧边栏",
   "Toggle Secondary Side Bar": "切换副侧边栏",
   "Primary Side Bar": "主侧边栏",
-  "Secondary Side Bar": "副侧边栏"
+  "Secondary Side Bar": "副侧边栏",
+  "Context Window": "上下文窗口",
+  "Temperature": "温度",
+  "Max Tokens": "最大 Token 数",
+  "Top P": "Top P",
+  "Frequency Penalty": "频率惩罚",
+  "Presence Penalty": "存在惩罚",
+  "System Prompt": "系统提示词",
+  "API Key": "API 密钥",
+  "Base URL": "基础 URL",
+  "Proxy": "代理",
+  "Telemetry": "遥测",
+  "Debug Mode": "调试模式",
+  "Experimental Features": "实验性功能",
+  "Reset to Defaults": "恢复默认设置",
+  "Show details": "显示详情",
+  "Show Details": "显示详情"
 }
