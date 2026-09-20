@@ -1,0 +1,32 @@
+{
+  "name": "antigravity-chinese",
+  "version": "1.0.0",
+  "description": "Google Antigravity 工业级深度中文化补丁与智能体本土化引擎",
+  "main": "dist/patch-payload.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js",
+    "inject": "node scripts/inject.js"
+  },
+  "keywords": [
+    "antigravity",
+    "google-antigravity",
+    "chinese-localization",
+    "i18n",
+    "subagent-synthesizer",
+    "clean-room"
+  ],
+  "author": "Antigravity Open Source Community",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/myxge/antigravity-chinese.git"
+  },
+  "bugs": {
+    "url": "https://github.com/myxge/antigravity-chinese/issues"
+  },
+  "homepage": "https://github.com/myxge/antigravity-chinese#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

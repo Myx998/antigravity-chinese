@@ -1,0 +1,49 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    name: Build & Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Verify Clean-room Standards (No Closed-source Preload Fragments)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const files = ['dist/patch-payload.js', 'src/index.js'];
+            for (const f of files) {
+              if (fs.existsSync(f)) {
+                const c = fs.readFileSync(f, 'utf8');
+                if (c.includes('contextBridge.exposeInMainWorld')) {
+                  console.error('Violates clean-room principle:', f);
+                  process.exit(1);
+                }
+              }
+            }
+            console.log('Clean-room verification passed!');
+          "
+
+      - name: Run Build Pipeline (Compile to Pure ASCII Unicode)
+        run: npm run build
+
+      - name: Run Regression Test Suite
+        run: npm test
