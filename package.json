@@ -20,12 +20,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/myxge/antigravity-chinese.git"
+    "url": "https://github.com/Myx998/antigravity-chinese.git"
   },
   "bugs": {
-    "url": "https://github.com/myxge/antigravity-chinese/issues"
+    "url": "https://github.com/Myx998/antigravity-chinese/issues"
   },
-  "homepage": "https://github.com/myxge/antigravity-chinese#readme",
+  "homepage": "https://github.com/Myx998/antigravity-chinese#readme",
   "engines": {
     "node": ">=16.0.0"
   }

@@ -21,7 +21,6 @@ const SAFE_ATTRS = ['placeholder', 'title', 'aria-label', 'data-tooltip', 'data-
 const BYPASS_ANCESTOR_SELECTOR = [
   '.monaco-editor',
   '.view-lines',
-  '.monaco-list-row',
   '.cm-editor',
   '.cm-content',
   '.editor-instance',
@@ -50,6 +49,21 @@ const BYPASS_ANCESTOR_SELECTOR = [
   'canvas'
 ].join(', ');
 
+function isMonacoListRowBypassed(el) {
+  if (!el) return false;
+  // 精准放行快捷命令面板（.quick-input-widget），避免快捷面板菜单项被误拦截
+  const inQuickInput = !!(el.closest && el.closest('.quick-input-widget'));
+  if (inQuickInput) return false;
+
+  if (el.matches && el.matches('.monaco-list-row')) return true;
+  if (el.closest && el.closest('.monaco-list-row')) return true;
+
+  const className = (typeof el.className === 'string') ? el.className : (el.getAttribute ? (el.getAttribute('class') || '') : '');
+  if (className && className.includes('monaco-list-row')) return true;
+
+  return false;
+}
+
 function isBypassedElement(el) {
   if (!el || el.nodeType !== 1) return false;
   if (IGNORE_TAGS.has(el.tagName)) return true;
@@ -59,9 +73,11 @@ function isBypassedElement(el) {
   if (el.matches && el.matches(BYPASS_ANCESTOR_SELECTOR)) return true;
   if (el.closest && el.closest(BYPASS_ANCESTOR_SELECTOR)) return true;
 
+  if (isMonacoListRowBypassed(el)) return true;
+
   const className = (typeof el.className === 'string') ? el.className : (el.getAttribute ? (el.getAttribute('class') || '') : '');
   if (className) {
-    const bypassClasses = ['monaco-editor', 'view-lines', 'monaco-list-row', 'terminal', 'xterm', 'code-block', 'hljs', 'cm-editor', 'cm-content'];
+    const bypassClasses = ['monaco-editor', 'view-lines', 'terminal', 'xterm', 'code-block', 'hljs', 'cm-editor', 'cm-content'];
     for (let i = 0; i < bypassClasses.length; i++) {
       if (className.includes(bypassClasses[i])) return true;
     }
@@ -246,10 +262,16 @@ function createObserverEngine(translateText) {
     }
   }
 
-  function startPeriodicSweep() {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    
-    const sweep = () => {
+  let isSweepScheduled = false;
+
+  function scheduleIdleSweep() {
+    if (isSweepScheduled) return;
+    isSweepScheduled = true;
+
+    const executeSweep = () => {
+      isSweepScheduled = false;
+      if (typeof document === 'undefined') return;
+      if (document.visibilityState === 'hidden') return;
       try {
         if (document.documentElement) {
           walk(document.documentElement);
@@ -257,14 +279,30 @@ function createObserverEngine(translateText) {
       } catch (e) {}
     };
 
-    window.addEventListener('focus', sweep, { passive: true });
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') sweep();
-    }, { passive: true });
-    window.addEventListener('popstate', sweep, { passive: true });
-    window.addEventListener('hashchange', sweep, { passive: true });
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => executeSweep(), { timeout: 2000 });
+    } else if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => setTimeout(executeSweep, 0));
+    } else {
+      setTimeout(executeSweep, 0);
+    }
+  }
 
-    setInterval(sweep, 1500);
+  function startPeriodicSweep() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    window.addEventListener('focus', scheduleIdleSweep, { passive: true });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') scheduleIdleSweep();
+    }, { passive: true });
+    window.addEventListener('popstate', scheduleIdleSweep, { passive: true });
+    window.addEventListener('hashchange', scheduleIdleSweep, { passive: true });
+
+    // 智能低频兜底巡检（防抖 + requestIdleCallback 空闲调度，彻底消除空载 CPU 占用）
+    setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      scheduleIdleSweep();
+    }, 3000);
   }
 
   function init() {
@@ -289,6 +327,7 @@ function createObserverEngine(translateText) {
     isBypassedNode,
     startObserver,
     hookShadowRoot,
+    scheduleIdleSweep,
     startPeriodicSweep,
     init
   };
@@ -300,6 +339,7 @@ module.exports = {
   BUTTON_INPUT_TYPES,
   SAFE_ATTRS,
   BYPASS_ANCESTOR_SELECTOR,
+  isMonacoListRowBypassed,
   isBypassedElement,
   isBypassedNode,
   createObserverEngine

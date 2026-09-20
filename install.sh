@@ -52,15 +52,51 @@ fi
 
 echo "[INFO] 目标客户端: $TARGET_ASAR"
 
-# 2. 检查 Payload 补丁文件
+# 2. 检查或远程拉取 Payload 补丁文件 (支持管道 curl 一键远程安装)
 if [ ! -f "$PAYLOAD_FILE" ]; then
-    echo "[INFO] 正在就地编译 dist/patch-payload.js..."
-    if command -v node >/dev/null 2>&1; then
+    if [ -f "dist/patch-payload.js" ]; then
+        PAYLOAD_FILE="$(pwd)/dist/patch-payload.js"
+    elif [ -f "$SCRIPT_DIR/scripts/build.js" ] && command -v node >/dev/null 2>&1; then
+        echo "[INFO] 未检测到预编译补丁，正在就地编译 dist/patch-payload.js..."
         node "$SCRIPT_DIR/scripts/build.js"
-    else
-        echo "[FATAL] 缺失 dist/patch-payload.js 且未检测到 Node.js，无法编译！"
+    fi
+fi
+
+if [ ! -f "$PAYLOAD_FILE" ]; then
+    echo "[NETWORK] 本地未检测到补丁文件，正在从极速 CDN / 镜像源拉取最新补丁..."
+    TEMP_PAYLOAD="/tmp/antigravity-patch-payload.js"
+    CDN_SOURCES=(
+        "https://cdn.jsdelivr.net/gh/Myx998/antigravity-chinese@main/dist/patch-payload.js"
+        "https://ghproxy.net/https://raw.githubusercontent.com/Myx998/antigravity-chinese/main/dist/patch-payload.js"
+        "https://raw.githubusercontent.com/Myx998/antigravity-chinese/main/dist/patch-payload.js"
+    )
+
+    DOWNLOAD_OK=0
+    for src in "${CDN_SOURCES[@]}"; do
+        echo "[DOWNLOAD] 尝试连接节点: $src"
+        if curl -fsSL --connect-timeout 5 -A "Antigravity-Installer" "$src" -o "$TEMP_PAYLOAD" 2>/dev/null; then
+            if [ -f "$TEMP_PAYLOAD" ] && grep -q "Antigravity Chinese Localization Patch" "$TEMP_PAYLOAD"; then
+                PAYLOAD_FILE="$TEMP_PAYLOAD"
+                DOWNLOAD_OK=1
+                echo "[SUCCESS] 成功从远程镜像拉取汉化补丁！"
+                break
+            fi
+        fi
+        echo "[WARN] 节点访问异常，自动切换下一镜像..."
+    done
+
+    if [ "$DOWNLOAD_OK" -ne 1 ]; then
+        echo "[FATAL] 所有远程节点拉取补丁均失败，请检查网络连接！"
         exit 1
     fi
+fi
+
+echo "[INFO] 补丁文件就绪: $PAYLOAD_FILE"
+
+# 2.1 目标路径写入权限检测
+if [ ! -w "$TARGET_ASAR" ] && [ "$EUID" -ne 0 ]; then
+    echo "[WARN] 目标客户端目录需要管理员权限写入！"
+    echo "[WARN] 如果后续写入遇到 Permission denied，请使用 sudo 执行本命令。"
 fi
 
 # 3. 安全关闭 Antigravity 进程

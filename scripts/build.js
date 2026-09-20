@@ -161,6 +161,7 @@ function build() {
       matchDynamicPatterns,
       translateText,
       createDispatcher,
+      isMonacoListRowBypassed,
       isBypassedElement,
       isBypassedNode,
       walk,

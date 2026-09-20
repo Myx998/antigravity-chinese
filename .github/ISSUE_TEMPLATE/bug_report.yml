@@ -1,0 +1,80 @@
+name: 故障与缺陷反馈 (Bug Report)
+description: 提交汉化补丁安装失败、运行时报错、代码编辑区误伤或白屏崩溃等问题
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你反馈问题！为了帮助开发者快速定位并修复缺陷，请尽可能详细地填写以下信息。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述 (Problem Description)
+      description: 发生了什么异常？
+      placeholder: 请清晰简要地描述你遇到的问题...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os_platform
+    attributes:
+      label: 操作系统平台 (Operating System)
+      description: 你正在使用的操作系统
+      options:
+        - Windows 11 / Windows 10
+        - macOS (Apple Silicon M系列)
+        - macOS (Intel)
+        - Linux (Ubuntu / Debian / Fedora / Arch)
+        - 其他
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: 安装方式 (Installation Method)
+      options:
+        - 方式一：PowerShell / 终端一行命令远程极速安装
+        - 方式二：下载离线 Zip 压缩包后双击脚本安装
+        - 开发者模式：git clone 后通过 npm 编译安装
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤 (Steps to Reproduce)
+      description: 重现此问题的具体步骤
+      placeholder: |
+        1. 运行安装脚本...
+        2. 打开 Antigravity 客户端...
+        3. 执行某操作后出现...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 终端输出与错误日志 (Terminal Output & Error Logs)
+      description: 安装过程控制台输出或客户端开发者控制台 (DevTools) 报错信息
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为 (Expected Behavior)
+      placeholder: 按照预期应该发生什么？
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图信息 (Screenshots)
+      placeholder: 粘贴或拖拽报错截图到此处...
+    validations:
+      required: false

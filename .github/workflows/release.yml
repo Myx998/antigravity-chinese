@@ -1,0 +1,63 @@
+name: Release Automation
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Clean-room Compliance Verification
+        run: |
+          node -e "
+            const fs = require('fs');
+            const files = ['dist/patch-payload.js', 'src/index.js'];
+            for (const f of files) {
+              if (fs.existsSync(f)) {
+                const c = fs.readFileSync(f, 'utf8');
+                if (c.includes('contextBridge.exposeInMainWorld')) {
+                  console.error('Violates clean-room principle:', f);
+                  process.exit(1);
+                }
+              }
+            }
+            console.log('Clean-room verification passed!');
+          "
+
+      - name: Build Patch Payload (Compile to 7-bit ASCII Unicode)
+        run: npm run build
+
+      - name: Run Full Regression Test Suite
+        run: npm test
+
+      - name: Create Release Archive (.zip)
+        run: |
+          zip -r "antigravity-chinese-${{ github.ref_name }}.zip" \
+            README.md LICENSE TERMS.md package.json \
+            install.bat install.ps1 install.sh \
+            restore.bat restore.ps1 restore.sh \
+            dist/ scripts/ src/
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/patch-payload.js
+            antigravity-chinese-${{ github.ref_name }}.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false

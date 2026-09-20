@@ -6,6 +6,14 @@
 const { synthesizeRole } = require('./synthesizer');
 const { matchDynamicPatterns } = require('./matcher');
 
+const SHORTCUT_MODIFIERS = '(?:Ctrl|Cmd|Command|Alt|Option|Shift|[⌘⌥⇧⌃])';
+const SHORTCUT_KEY_NAME = '(?:[a-zA-Z0-9,./`~=_+;:\'\"<>?\\[\\]\\\\-]|Up|Down|Left|Right|Home|End|PageUp|PageDown|Enter|Tab|Space|Delete|Backspace|Esc|Escape|F(?:[1-9]|1[0-2]))';
+const SHORTCUT_COMBO = `(?:${SHORTCUT_MODIFIERS}[+\\-])+${SHORTCUT_KEY_NAME}`;
+const SHORTCUT_FUNC = 'F(?:[1-9]|1[0-2])\\b';
+const SHORTCUT_STROKE = `(?:${SHORTCUT_COMBO}|${SHORTCUT_FUNC})`;
+const SHORTCUT_CHORD = `(?:${SHORTCUT_STROKE}(?:(?:\\s+|\\s*,\\s*)${SHORTCUT_STROKE})?)`;
+const SHORTCUT_REGEX = new RegExp(`^(.+?)\\s+(?:\\()?(${SHORTCUT_CHORD})(?:\\))?$`, 'i');
+
 function normalize(str) {
   return str ? str.replace(/\s+/g, ' ') : '';
 }
@@ -38,11 +46,11 @@ function createDispatcher(dictionary, lowerDictionary) {
       return normalized.replace(trimmed, lowerDictionary[lower]);
     }
 
-    // 3. 快捷键后缀检测 (Shortcut suffix fallback, e.g. "Toggle Auxiliary Pane Ctrl+Shift+B")
-    const scMatch = trimmed.match(/^(.+?)\s+(?:\()?((?:Ctrl|Cmd|Alt|Shift|⌘|⌥|⇧|⌃)[\+\-\w]+)(?:\))?$/i);
+    // 3. 快捷键后缀检测 (Shortcut suffix fallback, 支持单功能键 F1~F12、标点符号键及双组合 Chord 键)
+    const scMatch = trimmed.match(SHORTCUT_REGEX);
     if (scMatch) {
       const actionPart = scMatch[1].trim();
-      const scPart = scMatch[2];
+      const scPart = scMatch[2].trim();
       const transAction = dictionary[actionPart] || lowerDictionary[actionPart.toLowerCase()] || matchDynamicPatterns(actionPart);
       if (transAction) {
         return normalized.replace(trimmed, `${transAction} (${scPart})`);

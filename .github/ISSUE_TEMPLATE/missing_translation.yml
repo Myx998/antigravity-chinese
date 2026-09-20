@@ -1,0 +1,55 @@
+name: 漏翻词条反馈 (Missing Translation)
+description: 提交在 Google Antigravity 客户端中发现的英文原文、漏翻或生硬词条
+title: "[漏翻]: "
+labels: ["translation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你帮助完善 Google Antigravity 深度汉化补丁！
+        请在下方提供出现漏翻的原文与上下文，以便我们迅速定位并在下一版本中补充词典或匹配规则。
+
+  - type: input
+    id: original_text
+    attributes:
+      label: 英文原文 (Original English Text)
+      description: 界面上显示的未翻译英文完整文本（尽量保持大小写一致）
+      placeholder: 例如：Toggle Primary Side Bar Ctrl+B
+    validations:
+      required: true
+
+  - type: input
+    id: suggested_translation
+    attributes:
+      label: 建议中文翻译 (Suggested Chinese Translation)
+      description: 你认为最地道、准确的中文翻译
+      placeholder: 例如：切换主侧边栏 (Ctrl+B)
+    validations:
+      required: false
+
+  - type: input
+    id: ui_context
+    attributes:
+      label: 出现位置 / 触发场景 (UI Context)
+      description: 词条在界面的哪个部分出现？
+      placeholder: 例如：命令面板 (F1) / 任务进度条 / 子智能体卡片
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 界面截图或重现步骤 (Screenshot / Steps)
+      description: 可直接将截图粘贴到下方输入框中
+      placeholder: 粘贴或拖拽截图到此处...
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: 运行环境与版本 (Environment)
+      description: 操作系统平台与 Antigravity 客户端版本
+      placeholder: 例如：Windows 11 / macOS Sonoma / Antigravity v1.0.0
+    validations:
+      required: false

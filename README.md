@@ -3,7 +3,7 @@
 # 🚀 Google Antigravity 深度汉化与本土化增强引擎
 ### *The Industrial-Grade Clean-Room Localization Engine for Google Antigravity*
 
-[![CI Pipeline](https://github.com/myxge/antigravity-chinese/actions/workflows/ci.yml/badge.svg)](https://github.com/myxge/antigravity-chinese/actions)
+[![CI Pipeline](https://github.com/Myx998/antigravity-chinese/actions/workflows/ci.yml/badge.svg)](https://github.com/Myx998/antigravity-chinese/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Clean-Room Compliant](https://img.shields.io/badge/DMCA-Clean--Room%20100%25-brightgreen.svg)](TERMS.md)
 [![Encoding](https://img.shields.io/badge/Encoding-Pure%207--bit%20ASCII-orange.svg)](#3-编码管线杜绝-gbkcp936-乱码)
@@ -47,22 +47,41 @@ Google Antigravity 作为新一代端到端 AI Agent 编程环境，融合了大
 
 ## ⚡ 一键极速安装
 
-无需繁琐的手动解包配置，提供全自动原生安装器（**支持免装 Node.js**）：
+无需繁琐的手动解包配置，原生安装器**免装 Node.js**即可开箱即用：
 
-### 🪟 Windows 用户（推荐免装 Node）
-1. [下载本仓库 Zip 压缩包](https://github.com/myxge/antigravity-chinese/archive/refs/heads/main.zip) 并解压。
-2. 双击运行 **`install.bat`** 即可！（或在 PowerShell 中执行 `.\install.ps1`）
-> *内置 UniversalAsarEngine，全自动查找路径、安全关闭进程、备份原版并注入。*
+### 🚀 方式一：一行命令远程极速安装（推荐・免克隆仓库）
 
-### 🍎 macOS 用户
-打开终端，进入解压目录后运行：
-```bash
-chmod +x install.sh restore.sh
-./install.sh
+#### 🪟 Windows 用户（PowerShell）
+打开 PowerShell，直接复制粘贴运行以下任一命令：
+```powershell
+# 国内推荐 (jsDelivr CDN 极速加速)
+irm https://cdn.jsdelivr.net/gh/Myx998/antigravity-chinese@main/install.ps1 | iex
+
+# 官方 GitHub Raw 备用通道
+irm https://raw.githubusercontent.com/Myx998/antigravity-chinese/main/install.ps1 | iex
 ```
-> *脚本内置 macOS 自动重签名（`codesign`），彻底杜绝系统提示“应用已损坏，应移至废纸篓”的闪退问题。*
 
-### 🐧 Linux 用户
+#### 🍎 macOS / 🐧 Linux 用户（终端 Terminal）
+打开终端，直接复制粘贴运行以下任一命令：
+```bash
+# 国内推荐 (jsDelivr CDN 极速加速)
+curl -fsSL https://cdn.jsdelivr.net/gh/Myx998/antigravity-chinese@main/install.sh | bash
+
+# 官方 GitHub Raw 备用通道
+curl -fsSL https://raw.githubusercontent.com/Myx998/antigravity-chinese/main/install.sh | bash
+```
+> *macOS 内置自动 codesign 重签名，安装后不报“应用已损坏”。*
+
+---
+
+### 📦 方式二：下载离线压缩包安装
+
+#### 🪟 Windows 用户
+1. [下载本仓库 Zip 压缩包](https://github.com/Myx998/antigravity-chinese/archive/refs/heads/main.zip) 并解压。
+2. 双击运行 **`install.bat`** 即可！（或在 PowerShell 中执行 `.\install.ps1`）
+
+#### 🍎 macOS / 🐧 Linux 用户
+进入解压目录后运行：
 ```bash
 chmod +x install.sh restore.sh
 ./install.sh

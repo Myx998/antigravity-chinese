@@ -44,25 +44,108 @@ if (-not $TargetAsar -or -not (Test-Path $TargetAsar)) {
 
 Write-Host "[INFO] 目标客户端: $TargetAsar" -ForegroundColor Green
 
-# 2. 查找 Payload 补丁文件
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$payloadFile = Join-Path $scriptDir "dist\patch-payload.js"
+# 1.1 管理员权限 (UAC) 检测与提权
+function Test-IsAdmin {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
 
-if (-not (Test-Path $payloadFile)) {
-    Write-Host "[INFO] 未检测到预编译 dist/patch-payload.js，尝试就地编译..." -ForegroundColor Yellow
-    $nodeCmd = Get-Command "node" -ErrorAction SilentlyContinue
-    if ($nodeCmd) {
-        node (Join-Path $scriptDir "scripts\build.js")
+function Test-PathNeedsAdmin([string]$path) {
+    if (-not $path) { return $false }
+    $pFiles = [Environment]::GetFolderPath("ProgramFiles")
+    $pFilesX86 = [Environment]::GetFolderPath("ProgramFilesX86")
+    if (($pFiles -and $path.StartsWith($pFiles, [System.StringComparison]::OrdinalIgnoreCase)) -or
+        ($pFilesX86 -and $path.StartsWith($pFilesX86, [System.StringComparison]::OrdinalIgnoreCase))) {
+        return $true
+    }
+    return $false
+}
+
+if ((Test-PathNeedsAdmin $TargetAsar) -and (-not (Test-IsAdmin))) {
+    Write-Host "[UAC] 检测到目标文件位于受系统保护目录 (Program Files)，需要管理员权限！" -ForegroundColor Yellow
+    if ($MyInvocation.MyCommand.Path) {
+        Write-Host "[UAC] 正在自动请求管理员提权重新启动安装器..." -ForegroundColor Cyan
+        Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$($MyInvocation.MyCommand.Path)`" -TargetAsar `"$TargetAsar`""
+        exit 0
     } else {
-        Write-Host "[FATAL] 缺失 dist/patch-payload.js 且本机未安装 Node.js 无法编译！" -ForegroundColor Red
+        Write-Host "[UAC ERROR] 当前为免克隆管道模式运行，无法静默提权。" -ForegroundColor Red
+        Write-Host "请右键点击开始菜单 -> 选择【终端管理员】或【PowerShell (管理员)】，然后重新粘贴运行命令：" -ForegroundColor Yellow
+        Write-Host "  irm https://cdn.jsdelivr.net/gh/Myx998/antigravity-chinese@main/install.ps1 | iex" -ForegroundColor White
         exit 1
     }
 }
 
-if (-not (Test-Path $payloadFile)) {
-    Write-Host "[FATAL] 补丁文件不存在: $payloadFile" -ForegroundColor Red
-    exit 1
+# 2. 查找或远程拉取 Payload 补丁文件 (支持管道一行命令远程极速安装)
+$payloadFile = ""
+
+# 2.1 检查脚本同级或当前工作区目录
+if ($MyInvocation.MyCommand.Path) {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $cand = Join-Path $scriptDir "dist\patch-payload.js"
+    if (Test-Path $cand) {
+        $payloadFile = $cand
+    }
 }
+
+if (-not $payloadFile -and (Test-Path "dist\patch-payload.js")) {
+    $payloadFile = (Resolve-Path "dist\patch-payload.js").Path
+}
+
+# 2.2 本地未找到且有 Node 时尝试就地编译
+if (-not $payloadFile -and $MyInvocation.MyCommand.Path) {
+    $buildScript = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "scripts\build.js"
+    $nodeCmd = Get-Command "node" -ErrorAction SilentlyContinue
+    if ((Test-Path $buildScript) -and $nodeCmd) {
+        Write-Host "[INFO] 未检测到预编译 dist/patch-payload.js，正在就地编译..." -ForegroundColor Yellow
+        & node $buildScript
+        $cand = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "dist\patch-payload.js"
+        if (Test-Path $cand) {
+            $payloadFile = $cand
+        }
+    }
+}
+
+# 2.3 管道远程运行（免克隆仓库）或本地缺失时，自动通过 CDN/镜像拉取最新补丁
+if (-not $payloadFile) {
+    Write-Host "[NETWORK] 本地未检测到补丁文件，正在从极速 CDN / 镜像源拉取最新补丁..." -ForegroundColor Cyan
+    $tempPayload = Join-Path $env:TEMP "antigravity-patch-payload.js"
+
+    $cdnSources = @(
+        "https://cdn.jsdelivr.net/gh/Myx998/antigravity-chinese@main/dist/patch-payload.js",
+        "https://ghproxy.net/https://raw.githubusercontent.com/Myx998/antigravity-chinese/main/dist/patch-payload.js",
+        "https://raw.githubusercontent.com/Myx998/antigravity-chinese/main/dist/patch-payload.js"
+    )
+
+    $downloadSuccess = $false
+    foreach ($sourceUrl in $cdnSources) {
+        try {
+            Write-Host "[DOWNLOAD] 尝试连接节点: $sourceUrl" -ForegroundColor DarkGray
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+            $client = New-Object System.Net.WebClient
+            $client.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Antigravity-Installer")
+            $client.DownloadFile($sourceUrl, $tempPayload)
+            if ((Test-Path $tempPayload) -and ((Get-Item $tempPayload).Length -gt 1000)) {
+                $headContent = Get-Content -Path $tempPayload -TotalCount 5 -Raw
+                if ($headContent -match "Antigravity Chinese Localization Patch") {
+                    $payloadFile = $tempPayload
+                    $downloadSuccess = $true
+                    Write-Host "[SUCCESS] 成功从远程镜像拉取汉化补丁！" -ForegroundColor Green
+                    break
+                }
+            }
+        } catch {
+            Write-Host "[WARN] 节点访问异常，自动切换下一镜像..." -ForegroundColor Yellow
+        }
+    }
+
+    if (-not $downloadSuccess) {
+        Write-Host "[FATAL] 所有远程节点拉取补丁均失败，请检查网络连接或手动下载仓库后运行！" -ForegroundColor Red
+        exit 1
+    }
+}
+
+Write-Host "[INFO] 补丁文件就绪: $payloadFile" -ForegroundColor Green
 
 # 3. 检查并关闭 Antigravity 进程
 $processes = Get-Process -Name "antigravity" -ErrorAction SilentlyContinue

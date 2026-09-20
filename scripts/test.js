@@ -16,7 +16,7 @@ if (!fs.existsSync(distFile)) {
 
 // 动态加载编译后的产物
 const payload = require(distFile);
-const { translateText, isBypassedElement, isBypassedNode, synthesizeRole } = payload;
+const { translateText, isBypassedElement, isBypassedNode, isMonacoListRowBypassed, synthesizeRole } = payload;
 
 // 动态加载源码引擎模块（双重防御：源码单测 + 编译产物集成测试）
 const engine = require('../src/engine');
@@ -199,6 +199,31 @@ it('应该正确翻译 "Toggle Auxiliary Pane Ctrl+Shift+B"', () => {
   assert.ok(res && res.includes('(Ctrl+Shift+B)'), `Result: ${res}`);
 });
 
+it('应该正确翻译单功能键快捷键 "Command Palette F1"', () => {
+  const res = translateText('Command Palette F1');
+  assert.strictEqual(res, '命令面板 (F1)');
+});
+
+it('应该正确翻译带括号的单功能键 "Command Palette (F1)"', () => {
+  const res = translateText('Command Palette (F1)');
+  assert.strictEqual(res, '命令面板 (F1)');
+});
+
+it('应该正确翻译标点符号快捷键 "Settings Ctrl+,"', () => {
+  const res = translateText('Settings Ctrl+,');
+  assert.strictEqual(res, '系统设置 (Ctrl+,)');
+});
+
+it('应该正确翻译双组合 Chord 快捷键 "Keyboard Shortcuts Ctrl+K Ctrl+S"', () => {
+  const res = translateText('Keyboard Shortcuts Ctrl+K Ctrl+S');
+  assert.strictEqual(res, '键盘快捷键 (Ctrl+K Ctrl+S)');
+});
+
+it('应该正确翻译带逗号分隔的 Chord 快捷键 "Keyboard Shortcuts Ctrl+K, Ctrl+S"', () => {
+  const res = translateText('Keyboard Shortcuts Ctrl+K, Ctrl+S');
+  assert.strictEqual(res, '键盘快捷键 (Ctrl+K, Ctrl+S)');
+});
+
 it('应该正确翻译 "Running..." (省略号后退)', () => {
   const res = translateText('Running...');
   assert.strictEqual(res, '正在运行...');
@@ -261,6 +286,58 @@ it('应该拦截 Terminal/xterm 类名', () => {
 it('应该拦截 contenteditable 元素', () => {
   const editEl = { nodeType: 1, tagName: 'DIV', isContentEditable: true };
   assert.strictEqual(isBypassedElement(editEl), true);
+});
+
+it('应该拦截处于普通列表中的 monaco-list-row 元素', () => {
+  const normalRow = {
+    nodeType: 1,
+    tagName: 'DIV',
+    className: 'monaco-list-row',
+    matches(sel) { return sel.includes('monaco-list-row'); },
+    closest(sel) {
+      if (sel.includes('.quick-input-widget')) return null;
+      if (sel.includes('.monaco-list-row')) return this;
+      return null;
+    }
+  };
+  assert.strictEqual(isBypassedElement(normalRow), true);
+});
+
+it('应该放行处于快捷命令面板 (.quick-input-widget) 内的 monaco-list-row 元素', () => {
+  const quickInputContainer = { className: 'quick-input-widget' };
+  const quickInputRow = {
+    nodeType: 1,
+    tagName: 'DIV',
+    className: 'monaco-list-row',
+    matches(sel) { return sel.includes('monaco-list-row'); },
+    closest(sel) {
+      if (sel.includes('.quick-input-widget')) return quickInputContainer;
+      if (sel.includes('.monaco-list-row')) return this;
+      return null;
+    }
+  };
+  assert.strictEqual(isBypassedElement(quickInputRow), false);
+});
+
+it('应该放行处于快捷命令面板内部 monaco-list-row 子节点的文本', () => {
+  const quickInputContainer = { className: 'quick-input-widget' };
+  const quickInputRow = {
+    nodeType: 1,
+    tagName: 'DIV',
+    className: 'monaco-list-row',
+    matches(sel) { return sel.includes('monaco-list-row'); },
+    closest(sel) {
+      if (sel.includes('.quick-input-widget')) return quickInputContainer;
+      if (sel.includes('.monaco-list-row')) return this;
+      return null;
+    }
+  };
+  const textNode = {
+    nodeType: 3,
+    nodeValue: 'Preferences: Open User Settings',
+    parentElement: quickInputRow
+  };
+  assert.strictEqual(isBypassedNode(textNode), false);
 });
 
 // 9. 编译产物 7-bit ASCII 与编码安全测试
