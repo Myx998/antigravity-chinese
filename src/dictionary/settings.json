@@ -179,5 +179,13 @@
   "Experimental Features": "实验性功能",
   "Reset to Defaults": "恢复默认设置",
   "Show details": "显示详情",
-  "Show Details": "显示详情"
+  "Show Details": "显示详情",
+  "5-hour limit": "5小时额度",
+  "weekly limit": "周度额度",
+  "Your 5-hour limit": "您的5小时额度",
+  "Your weekly limit": "您的周度额度",
+  "so the weekly limit does not currently apply": "因此周度额度当前不适用",
+  "so the weekly limit does not currently apply.": "因此周度额度当前不适用。",
+  "If on a supported paid plan, you can use AI credits in the interim": "若使用的是支持的付费计划，期间可使用 AI 信用点",
+  "If on a supported paid plan, you can use AI credits in the interim.": "若使用的是支持的付费计划，期间可使用 AI 信用点。"
 }

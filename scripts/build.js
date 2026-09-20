@@ -39,13 +39,14 @@ function build() {
 
   // 1. 读取并合并所有词典
   const dictFiles = [
+    'common.json',
     'actions.json',
     'sidebar.json',
     'settings.json',
     'subagents.json',
     'units.json',
     'tools.json',
-    'common.json'
+    'skills.json'
   ];
 
   const mergedDict = {};

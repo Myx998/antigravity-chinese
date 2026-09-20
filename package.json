@@ -9,7 +9,8 @@
   "scripts": {
     "build": "node scripts/build.js",
     "test": "node scripts/test.js",
-    "inject": "node scripts/inject.js"
+    "inject": "node scripts/inject.js",
+    "generate:skills": "node scripts/generate-skills-dict.js"
   },
   "keywords": [
     "antigravity",

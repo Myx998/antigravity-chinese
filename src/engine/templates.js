@@ -3,8 +3,55 @@
  * 动态正则匹配模板表
  */
 
+function formatLimitDuration(str) {
+  if (!str) return '';
+  return str
+    .replace(/\bdays?\b/gi, '天')
+    .replace(/\bhours?\b/gi, '小时')
+    .replace(/\bminutes?\b/gi, '分钟')
+    .replace(/\bseconds?\b/gi, '秒')
+    .replace(/,/g, ' ')
+    .replace(/\band\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function formatLimitName(name) {
+  if (!name) return '额度';
+  const n = name.toLowerCase().trim();
+  if (n === '5-hour limit' || n === '5-hour') return '5小时额度';
+  if (n === 'weekly limit' || n === 'weekly') return '周度额度';
+  if (n === 'daily limit' || n === 'daily') return '每日额度';
+  if (n === 'monthly limit' || n === 'monthly') return '月度额度';
+  const m = n.match(/^(\d+)-hour(?:\s+limit)?$/);
+  if (m) return `${m[1]}小时额度`;
+  const md = n.match(/^(\d+)-day(?:\s+limit)?$/);
+  if (md) return `${md[1]}天额度`;
+  return name.replace(/\blimit\b/i, '额度').trim();
+}
+
 const DYNAMIC_TEMPLATES = [
-  { regex: /^You have used some of your weekly limit, it will fully refresh in (.+?)\.?$/i, format: (m) => `您已使用部分周度额度，它将在 ${m[1].replace(/days?/i, '天').replace(/hours?/i, '小时').replace(/minutes?/i, '分钟').replace(/,/g, '').trim()} 后完全刷新` },
+  // 1. 配额与限额动态时间刷新模板
+  {
+    regex: /^You have used some of your (.+? limit), it will (fully )?refresh in (.+?)\.?$/i,
+    format: (m) => `您已使用部分${formatLimitName(m[1])}，将在 ${formatLimitDuration(m[3])} 后${m[2] ? '完全' : ''}刷新`
+  },
+  {
+    regex: /^You have (?:hit|reached) your (.+? limit), so the weekly limit does not currently apply\. Your (?:.+? limit) will (fully )?refresh in (.+?)\.?(?:\s+(If on a supported paid plan, you can use AI credits in the interim\.?))?$/i,
+    format: (m) => `您已达到${formatLimitName(m[1])}，因此周度额度当前不适用。您的${formatLimitName(m[1])}将在 ${formatLimitDuration(m[3])} 后${m[2] ? '完全' : ''}刷新${m[4] ? '。若使用的是支持的付费计划，期间可使用 AI 信用点。' : ''}`
+  },
+  {
+    regex: /^You have (?:hit|reached) your (.+? limit), it will (fully )?refresh in (.+?)\.?(?:\s+(If on a supported paid plan, you can use AI credits in the interim\.?))?$/i,
+    format: (m) => `您已达到${formatLimitName(m[1])}，将在 ${formatLimitDuration(m[3])} 后${m[2] ? '完全' : ''}刷新${m[4] ? '。若使用的是支持的付费计划，期间可使用 AI 信用点。' : ''}`
+  },
+  {
+    regex: /^Your (.+? limit) will (fully )?refresh in (.+?)\.?$/i,
+    format: (m) => `您的${formatLimitName(m[1])}将在 ${formatLimitDuration(m[3])} 后${m[2] ? '完全' : ''}刷新`
+  },
+  {
+    regex: /^If on a supported paid plan, you can use AI credits in the interim\.?$/i,
+    format: () => `若使用的是支持的付费计划，期间可使用 AI 信用点。`
+  },
 
   // 智能体角色与层级
   {
@@ -72,5 +119,7 @@ const DYNAMIC_TEMPLATES = [
 ];
 
 module.exports = {
-  DYNAMIC_TEMPLATES
+  DYNAMIC_TEMPLATES,
+  formatLimitDuration,
+  formatLimitName
 };

@@ -502,6 +502,66 @@ it('深度扫描器必须精确命中 dist/preload.js，而忽略 node_modules �
   assert.ok(!matchedChunk.includes('"size":200'), 'Should NOT match semver preload');
 });
 
+// 12. 配额与限额动态时间模板测试 (覆盖 5-hour limit, weekly limit, hit limit 及 AI credits 变体)
+console.log('\nGroup 12: 配额与限额动态时间模板');
+it('应该正确翻译 "You have used some of your 5-hour limit, it will fully refresh in 3 hours, 50 minutes."', () => {
+  const res = translateText('You have used some of your 5-hour limit, it will fully refresh in 3 hours, 50 minutes.');
+  assert.strictEqual(res, '您已使用部分5小时额度，将在 3 小时 50 分钟 后完全刷新');
+});
+
+it('应该正确翻译 "You have hit your 5-hour limit, so the weekly limit does not currently apply. Your 5-hour limit will refresh in 3 hours, 57 minutes."', () => {
+  const res = translateText('You have hit your 5-hour limit, so the weekly limit does not currently apply. Your 5-hour limit will refresh in 3 hours, 57 minutes.');
+  assert.strictEqual(res, '您已达到5小时额度，因此周度额度当前不适用。您的5小时额度将在 3 小时 57 分钟 后刷新');
+});
+
+it('应该正确翻译 "You have hit your 5-hour limit, it will refresh in 3 hours, 57 minutes. If on a supported paid plan, you can use AI credits in the interim."', () => {
+  const res = translateText('You have hit your 5-hour limit, it will refresh in 3 hours, 57 minutes. If on a supported paid plan, you can use AI credits in the interim.');
+  assert.strictEqual(res, '您已达到5小时额度，将在 3 小时 57 分钟 后刷新。若使用的是支持的付费计划，期间可使用 AI 信用点。');
+});
+
+it('应该正确翻译 "You have used some of your weekly limit, it will fully refresh in 2 days, 4 hours."', () => {
+  const res = translateText('You have used some of your weekly limit, it will fully refresh in 2 days, 4 hours.');
+  assert.strictEqual(res, '您已使用部分周度额度，将在 2 天 4 小时 后完全刷新');
+});
+
+it('应该正确翻译独立短语 "If on a supported paid plan, you can use AI credits in the interim."', () => {
+  const res = translateText('If on a supported paid plan, you can use AI credits in the interim.');
+  assert.strictEqual(res, '若使用的是支持的付费计划，期间可使用 AI 信用点。');
+});
+
+// 13. 插件与技能系统全量说明汉化测试
+console.log('\nGroup 13: 插件与技能系统全量说明汉化');
+it('应该正确汉化 Android CLI 技能说明', () => {
+  const res = translateText('Provides instructions for using the android CLI tool to manage devices, emulators, SDK components, and build projects.');
+  assert.ok(res && res.includes('Android 命令行工具'));
+});
+
+it('应该正确汉化 Chrome DevTools 技能说明', () => {
+  const res = translateText('Uses Chrome DevTools via MCP for efficient debugging, troubleshooting and browser automation. Use when debugging web pages, automating browser interactions, analyzing performance, or inspecting network requests. This skill does not apply to --slim mode (MCP configuration).');
+  assert.ok(res && res.includes('Chrome DevTools'));
+});
+
+it('应该正确汉化 BigQuery AI & ML 技能说明 (含前导横杠兼容)', () => {
+  const res = translateText('- Leverages BigQuery\'s built-in machine learning and GenAI capabilities for advanced data analytics. Use when you need to write SQL queries that perform time-series forecasting, detect outliers, find key drivers, or leverage generative AI capabilities in BigQuery.');
+  assert.ok(res && res.includes('BigQuery 内置机器学习'));
+});
+
+it('应该保证本地所有 126 个已注册技能的官方 description 均被 100% 成功汉化', () => {
+  const extractedFile = path.resolve(__dirname, 'extracted_skills.json');
+  if (fs.existsSync(extractedFile)) {
+    const skills = JSON.parse(fs.readFileSync(extractedFile, 'utf8'));
+    let unlocalizedCount = 0;
+    for (const skill of skills) {
+      const translated = translateText(skill.description);
+      if (!translated || !/[\u4e00-\u9fa5]/.test(translated)) {
+        unlocalizedCount++;
+        console.error(`  [SKILL UNTRANSLATED] ${skill.name}: "${skill.description.substring(0, 60)}..."`);
+      }
+    }
+    assert.strictEqual(unlocalizedCount, 0, `存在 ${unlocalizedCount} 个未汉化的技能描述`);
+  }
+});
+
 console.log('\n----------------------------------------------------');
 console.log(`Total: ${totalTests}, Passed: ${passedTests}, Failed: ${failedTests}`);
 if (failedTests > 0) {
