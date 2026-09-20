@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Google Antigravity 深度汉化补丁 - Windows 一键还原脚本
 .DESCRIPTION

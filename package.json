@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Google Antigravity 工业级深度中文化补丁与智能体本土化引擎",
   "main": "dist/patch-payload.js",
+  "bin": {
+    "antigravity-chinese": "bin/cli.js"
+  },
   "scripts": {
     "build": "node scripts/build.js",
     "test": "node scripts/test.js",

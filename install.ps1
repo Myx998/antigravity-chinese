@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Google Antigravity 深度汉化补丁 - Windows 极速一键安装器
 .DESCRIPTION

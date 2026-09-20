@@ -170,13 +170,7 @@ function injectAsar(targetAsarPath, payloadFilePath) {
 // CLI 执行入口
 if (require.main === module) {
   const args = process.argv.slice(2);
-  const targetAsar = args[0] || (
-    process.platform === 'win32'
-      ? path.join(process.env.LOCALAPPDATA || '', 'Programs/antigravity/resources/app.asar')
-      : process.platform === 'darwin'
-      ? '/Applications/Antigravity.app/Contents/Resources/app.asar'
-      : '/opt/antigravity/resources/app.asar'
-  );
+  const targetAsar = args[0] || getDefaultAsarPath();
   const payloadPath = args[1] || path.resolve(__dirname, '../dist/patch-payload.js');
 
   console.log(`Target: ${targetAsar}`);
@@ -193,4 +187,75 @@ if (require.main === module) {
     });
 }
 
-module.exports = { injectAsar };
+function getDefaultAsarPath() {
+  const candidates = process.platform === 'win32'
+    ? [
+        path.join(process.env.LOCALAPPDATA || '', 'Programs/antigravity/resources/app.asar'),
+        path.join(process.env.ProgramFiles || '', 'antigravity/resources/app.asar'),
+      ]
+    : process.platform === 'darwin'
+    ? [
+        '/Applications/Antigravity.app/Contents/Resources/app.asar',
+        path.join(process.env.HOME || '', 'Applications/Antigravity.app/Contents/Resources/app.asar'),
+      ]
+    : [
+        '/opt/antigravity/resources/app.asar',
+        '/usr/lib/antigravity/resources/app.asar',
+        path.join(process.env.HOME || '', '.local/share/antigravity/resources/app.asar'),
+      ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return candidates[0];
+}
+
+async function restoreAsar(asarPath) {
+  const backupPath = asarPath + '.bak';
+  if (!fs.existsSync(backupPath)) {
+    throw new Error(`Backup file not found: ${backupPath}`);
+  }
+  fs.copyFileSync(backupPath, asarPath);
+  console.log(`[RESTORE] Restored from backup: ${backupPath}`);
+}
+
+function checkStatus(asarPath) {
+  const stat = fs.statSync(asarPath);
+  const backupPath = asarPath + '.bak';
+  const hasBackup = fs.existsSync(backupPath);
+  const backupSize = hasBackup ? fs.statSync(backupPath).size : 0;
+
+  const buf = fs.readFileSync(asarPath);
+  const u2 = buf.readUInt32LE(4);
+  const jsonSize = buf.readUInt32LE(12);
+  const dataStart = 8 + u2;
+  const headerJson = buf.toString('utf8', 16, 16 + jsonSize);
+  const root = JSON.parse(headerJson);
+
+  let isPatched = false;
+  let patchTimestamp = null;
+  try {
+    const preloadNode = root.files.dist.files['preload.js'];
+    if (preloadNode) {
+      const offset = parseInt(preloadNode.offset, 10);
+      const size = preloadNode.size;
+      const content = buf.toString('utf8', dataStart + offset, dataStart + offset + size);
+      isPatched = content.includes(patchMarker);
+      if (isPatched) {
+        const tsMatch = content.match(/Build Timestamp:\s*(.+)/);
+        patchTimestamp = tsMatch ? tsMatch[1].trim() : null;
+      }
+    }
+  } catch (e) {
+    // ignore parse errors
+  }
+
+  return {
+    fileSize: stat.size,
+    isPatched,
+    hasBackup,
+    backupSize,
+    patchTimestamp,
+  };
+}
+
+module.exports = { injectAsar, restoreAsar, checkStatus, getDefaultAsarPath };
