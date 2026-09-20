@@ -376,7 +376,9 @@ const MODIFIER_MAP = {
   'quality': '质量',
   'compliance': '合规',
   'async': '异步',
-  'concurrency': '并发'
+  'concurrency': '并发',
+  'vulnerability': '漏洞',
+  'vulnerabilities': '漏洞'
 };
 
 // 9. 面板徽标映射

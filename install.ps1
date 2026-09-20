@@ -106,9 +106,101 @@ $csharpCode = @"
 using System;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
 public class UniversalAsarEngine {
+    private static int FindAsarEntryStart(string json, string targetDir, string targetFile) {
+        string rootMarker = "\"files\":{";
+        int rootIdx = json.IndexOf(rootMarker);
+        if (rootIdx < 0) return -1;
+
+        int pos = rootIdx + rootMarker.Length;
+        int braceDepth = 0;
+        bool inString = false;
+        bool escape = false;
+        string key = "";
+        bool collectingKey = false;
+        int targetDirStart = -1;
+
+        while (pos < json.Length) {
+            char c = json[pos];
+            if (escape) { escape = false; pos++; continue; }
+            if (c == '\\') { escape = true; pos++; continue; }
+            if (c == '"') {
+                inString = !inString;
+                if (inString && braceDepth == 0) {
+                    key = "";
+                    collectingKey = true;
+                } else if (!inString && collectingKey) {
+                    collectingKey = false;
+                    if (key == targetDir) {
+                        targetDirStart = json.IndexOf('{', pos);
+                        break;
+                    }
+                }
+                pos++;
+                continue;
+            }
+            if (inString) {
+                if (collectingKey) key += c;
+                pos++;
+                continue;
+            }
+            if (c == '{') braceDepth++;
+            else if (c == '}') {
+                braceDepth--;
+                if (braceDepth < 0) break;
+            }
+            pos++;
+        }
+
+        if (targetDirStart < 0) return -1;
+
+        string subFilesMarker = "\"files\":{";
+        int subFilesIdx = json.IndexOf(subFilesMarker, targetDirStart);
+        if (subFilesIdx < 0) return -1;
+
+        pos = subFilesIdx + subFilesMarker.Length;
+        braceDepth = 0;
+        inString = false;
+        escape = false;
+        collectingKey = false;
+
+        while (pos < json.Length) {
+            char c = json[pos];
+            if (escape) { escape = false; pos++; continue; }
+            if (c == '\\') { escape = true; pos++; continue; }
+            if (c == '"') {
+                inString = !inString;
+                if (inString && braceDepth == 0) {
+                    key = "";
+                    collectingKey = true;
+                } else if (!inString && collectingKey) {
+                    collectingKey = false;
+                    if (key == targetFile) {
+                        return json.IndexOf('{', pos);
+                    }
+                }
+                pos++;
+                continue;
+            }
+            if (inString) {
+                if (collectingKey) key += c;
+                pos++;
+                continue;
+            }
+            if (c == '{') braceDepth++;
+            else if (c == '}') {
+                braceDepth--;
+                if (braceDepth < 0) break;
+            }
+            pos++;
+        }
+
+        return -1;
+    }
+
     public static void Inject(string asarPath, string payloadPath) {
         byte[] asarBytes = File.ReadAllBytes(asarPath);
         string patchCode = File.ReadAllText(payloadPath, Encoding.UTF8);
@@ -120,23 +212,49 @@ public class UniversalAsarEngine {
         string headerJson = Encoding.UTF8.GetString(asarBytes, 16, (int)jsonSize);
         string marker = "// Antigravity Chinese Localization Patch";
 
-        // 定位 preload.js 在 header 中的记录
-        int pIdx = headerJson.IndexOf("\"preload.js\"");
-        if (pIdx < 0) throw new Exception("preload.js entry not found in asar header");
+        // 精确查找 dist/preload.js
+        int entryStart = FindAsarEntryStart(headerJson, "dist", "preload.js");
+        if (entryStart < 0) {
+            int pIdx = headerJson.LastIndexOf("\"preload.js\"");
+            if (pIdx >= 0) entryStart = headerJson.IndexOf('{', pIdx);
+        }
+        if (entryStart < 0) {
+            throw new Exception("dist/preload.js entry not found in asar header");
+        }
 
-        int distObjIdx = headerJson.LastIndexOf("\"dist\"", pIdx);
-        if (distObjIdx < 0) throw new Exception("dist directory not found in asar header");
+        // 查找 entry 的闭合 '}'
+        int depth = 0;
+        int entryEnd = -1;
+        bool inStr = false;
+        bool esc = false;
+        for (int i = entryStart; i < headerJson.Length; i++) {
+            char c = headerJson[i];
+            if (esc) { esc = false; continue; }
+            if (c == '\\') { esc = true; continue; }
+            if (c == '"') { inStr = !inStr; continue; }
+            if (inStr) continue;
 
-        // 提取 preload.js 的 offset 和 size
-        int offKey = headerJson.IndexOf("\"offset\":\"", pIdx);
-        int offEnd = headerJson.IndexOf("\"", offKey + 10);
-        string oldOffsetStr = headerJson.Substring(offKey + 10, offEnd - (offKey + 10));
-        long oldOffset = long.Parse(oldOffsetStr);
+            if (c == '{') depth++;
+            else if (c == '}') {
+                depth--;
+                if (depth == 0) {
+                    entryEnd = i;
+                    break;
+                }
+            }
+        }
+        if (entryEnd < 0) throw new Exception("Invalid JSON structure for preload.js entry");
 
-        int sizeKey = headerJson.IndexOf("\"size\":", pIdx);
-        int sizeEnd = headerJson.IndexOfAny(new char[] { ',', '}' }, sizeKey + 7);
-        string oldSizeStr = headerJson.Substring(sizeKey + 7, sizeEnd - (sizeKey + 7)).Trim();
-        int oldSize = int.Parse(oldSizeStr);
+        string oldEntry = headerJson.Substring(entryStart, entryEnd - entryStart + 1);
+
+        Match mOff = Regex.Match(oldEntry, "\"offset\"\\s*:\\s*\"(\\d+)\"");
+        Match mSize = Regex.Match(oldEntry, "\"size\"\\s*:\\s*(\\d+)");
+        if (!mOff.Success || !mSize.Success) {
+            throw new Exception("Could not parse offset/size from preload.js entry: " + oldEntry);
+        }
+
+        long oldOffset = long.Parse(mOff.Groups[1].Value);
+        int oldSize = int.Parse(mSize.Groups[1].Value);
 
         // 提取原版 preload.js 内容
         string origPreload = Encoding.UTF8.GetString(asarBytes, (int)(dataStart + oldOffset), oldSize);
@@ -148,8 +266,6 @@ public class UniversalAsarEngine {
         string newPreload = origPreload + "\r\n\r\n" + patchCode;
         byte[] newPreloadBytes = Encoding.UTF8.GetBytes(newPreload);
 
-        // 注入替换并重构文件
-        // 简单安全模式：直接将新 preload 写入尾部并重写 offset 与 size
         long newPreloadOffset = asarBytes.Length - dataStart;
         byte[] combinedData;
         using (MemoryStream ms = new MemoryStream()) {
@@ -158,22 +274,9 @@ public class UniversalAsarEngine {
             combinedData = ms.ToArray();
         }
 
-        string newHeaderJson = headerJson.Replace(
-            "\"offset\":\"" + oldOffsetStr + "\"",
-            "\"offset\":\"" + newPreloadOffset.ToString() + "\""
-        );
-        newHeaderJson = newHeaderJson.Replace(
-            "\"size\":" + oldSizeStr,
-            "\"size\":" + newPreloadBytes.Length.ToString()
-        );
-
-        // 去除 integrity 签名防篡改验证
-        int integIdx = newHeaderJson.IndexOf("\"integrity\":", pIdx);
-        if (integIdx >= 0 && integIdx < pIdx + 300) {
-            int closeBrace = newHeaderJson.IndexOf("}", integIdx);
-            string integChunk = newHeaderJson.Substring(integIdx, closeBrace - integIdx + 1);
-            // 保持 json 语法闭合
-        }
+        // 局部精准替换 entry，不触碰任何其它文件，并自动剥离 integrity 校验
+        string newEntry = "{\"size\":" + newPreloadBytes.Length + ",\"offset\":\"" + newPreloadOffset.ToString() + "\"}";
+        string newHeaderJson = headerJson.Substring(0, entryStart) + newEntry + headerJson.Substring(entryEnd + 1);
 
         byte[] newHeaderBytes = Encoding.UTF8.GetBytes(newHeaderJson);
         int padding = (4 - (newHeaderBytes.Length % 4)) % 4;
@@ -189,7 +292,6 @@ public class UniversalAsarEngine {
                 bw.Write(newJsonSize);
                 bw.Write(newHeaderBytes);
                 for (int i = 0; i < padding; i++) bw.Write((byte)0);
-                // 写入数据
                 bw.Write(combinedData, dataStart, combinedData.Length - dataStart);
             }
         }

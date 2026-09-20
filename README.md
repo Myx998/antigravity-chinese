@@ -96,17 +96,20 @@ antigravity-chinese/
 │   │   ├── settings.json         # 偏好设置、模型配置、快捷键（165 项）
 │   │   ├── subagents.json        # 智能体专有名词与词缀（86 项）
 │   │   ├── tools.json            # 开发者工具、MCP 服务与终端（99 项）
+│   │   ├── units.json            # 常用时间与度量计量单位（39 项）
 │   │   └── common.json           # 常用按钮、弹窗与通用文案（753 项）
-│   └── engine/
+│   └── engine/                   # 纯净开源本地化引擎核心
+│       ├── index.js              # 引擎统一出口（供构建与单测）
 │       ├── constants.js          # 动词时态表、度量单位映射、实体状态定义
+│       ├── templates.js          # 动态正则匹配模板库
 │       ├── synthesizer.js        # 通用子智能体角色构词法合成引擎
 │       ├── matcher.js            # 复合从句、耗时追踪与正则模式匹配器
 │       ├── dispatcher.js         # 主翻译分发器（快捷键与省略号兜底）
 │       └── observer.js           # 严格安全旁路审查与 Shadow DOM 穿透监听
-├── install.bat / install.ps1     # Windows 免装 Node 双击安装器
+├── install.bat / install.ps1     # Windows 免装 Node 双击安装器（内嵌 UniversalAsarEngine）
 ├── install.sh                    # macOS / Linux 安装器（含自动 Codesign）
-├── restore.bat / restore.ps1     # Windows 一键还原
-├── restore.sh                    # macOS / Linux 一键还原
+├── restore.bat / restore.ps1     # Windows 一键还原官方纯净版
+├── restore.sh                    # macOS / Linux 一键还原官方纯净版
 ├── TERMS.md                      # DMCA 洁净室架构与合规说明
 └── LICENSE                       # MIT 开源协议
 ```
@@ -119,6 +122,7 @@ antigravity-chinese/
 - 输入 `AI Portrait Fidelity Auditor` ➔ 自动拆解为 `[AI] [人像] [保真度] [审计师]` ➔ 输出 `AI人像保真度审计师`
 - 输入 `Database Schema Validator L2` ➔ 自动提取层级后缀 ➔ 输出 `数据库架构验证器 L2`
 - 输入 `Frontend Layout Optimizer` ➔ 输出 `前端布局优化师`
+- 输入 `Security Vulnerability Auditor #1` ➔ 输出 `安全漏洞审计师 #1`
 
 ### 3. 编码管线杜绝 GBK/CP936 乱码
 通过 `scripts/build.js` 将所有中文字符在编译阶段自动转换为标准 ASCII `\uXXXX` 转义序列，彻底免疫 Windows 控制台编码差异。
@@ -136,11 +140,11 @@ npm install
 # 编译生成单文件补丁 dist/patch-payload.js
 npm run build
 
-# 运行全量 32 项自动化回归测试
+# 运行全量 44 项自动化回归测试
 npm test
 ```
 
-测试覆盖实战高频短语（`Running 2 commands v`、`Exploring 1 file, 1 search`、`AI Portrait Fidelity Auditor`、耗时追踪、实体状态矩阵、安全旁路过滤等）。
+测试覆盖实战高频短语（`Running 2 commands v`、`Exploring 1 file, 1 search`、`AI Portrait Fidelity Auditor`、耗时追踪、实体状态矩阵、安全旁路过滤、源码与产物双重校验、Asar 深度路径防误伤等）。
 
 ---
 

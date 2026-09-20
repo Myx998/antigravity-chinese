@@ -171,10 +171,17 @@ else
 fi
 
 # 6. macOS 自动签名重写 (规避 Gatekeeper “应用已损坏”闪退)
-if [ "$OS_TYPE" = "Darwin" ] && [ -d "$APP_PATH" ]; then
-    echo "[SECURITY] 正在为 macOS 重新签名应用以规避系统安全拦截..."
-    codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true
-    echo "[SECURITY] 应用重签名已完成！"
+if [ "$OS_TYPE" = "Darwin" ]; then
+    if [ -z "$APP_PATH" ] || [ ! -d "$APP_PATH" ]; then
+        if [[ "$TARGET_ASAR" == *".app"* ]]; then
+            APP_PATH="${TARGET_ASAR%%.app*}.app"
+        fi
+    fi
+    if [ -n "$APP_PATH" ] && [ -d "$APP_PATH" ]; then
+        echo "[SECURITY] 正在为 macOS 重新签名应用以规避系统安全拦截..."
+        codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true
+        echo "[SECURITY] 应用重签名已完成！"
+    fi
 fi
 
 echo ""

@@ -61,9 +61,16 @@ sleep 1
 echo "[RESTORE] 正在恢复备份..."
 cp -f "$BACKUP_ASAR" "$TARGET_ASAR"
 
-if [ "$OS_TYPE" = "Darwin" ] && [ -d "$APP_PATH" ]; then
-    echo "[SECURITY] 正在重新签署官方应用状态..."
-    codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true
+if [ "$OS_TYPE" = "Darwin" ]; then
+    if [ -z "$APP_PATH" ] || [ ! -d "$APP_PATH" ]; then
+        if [[ "$TARGET_ASAR" == *".app"* ]]; then
+            APP_PATH="${TARGET_ASAR%%.app*}.app"
+        fi
+    fi
+    if [ -n "$APP_PATH" ] && [ -d "$APP_PATH" ]; then
+        echo "[SECURITY] 正在重新签署官方应用状态..."
+        codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true
+    fi
 fi
 
 echo ""
