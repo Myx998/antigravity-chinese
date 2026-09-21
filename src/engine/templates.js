@@ -147,7 +147,9 @@ const DYNAMIC_TEMPLATES = [
   { regex: /^Replacing\s+(.+)$/i, format: (m) => `正在替换 ${m[1]}` },
   { regex: /^Killing\s+(.+)$/i, format: (m) => `正在终止 ${m[1]}` },
   { regex: /^Setting\s+(.+)$/i, format: (m) => `正在设置 ${m[1]}` },
-  { regex: /^Signed\s+in\s+as\s+(.+)$/i, format: (m) => `已登录为 ${m[1]}` }
+  { regex: /^Signed\s+in\s+as\s+(.+)$/i, format: (m) => `已登录为 ${m[1]}` },
+  { regex: /^Your\s+Plan:\s*(.+)$/i, format: (m) => `当前方案: ${m[1]}` },
+  { regex: /^Your\s+Plan:?$/i, format: () => '当前方案:' }
 ];
 
 module.exports = {

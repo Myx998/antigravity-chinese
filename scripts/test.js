@@ -862,6 +862,70 @@ it('src/index.js 应成功加载 skills.json 且词典条目数与产物保持�
   assert.strictEqual(dicts.dictionary['Bundled Skills'], '内置技能');
 });
 
+// 20. 账户设置 (Account Settings) 弹窗关键文案及变体
+console.log('\nGroup 20: 账户设置 (Account Settings) 核心交互文案');
+it('应该正确翻译顶部说明 "Manage your plan, credentials, and general preferences."', () => {
+  const res1 = translateText('Manage your plan, credentials, and general preferences.');
+  assert.strictEqual(res1, '管理您的方案计划、凭证和通用偏好设置。');
+  const res2 = translateText('Manage your plan, credentials, and general preferences');
+  assert.strictEqual(res2, '管理您的方案计划、凭证和通用偏好设置');
+});
+
+it('应该正确翻译 Telemetry 遥测说明 "When toggled on, Antigravity collects usage data to help Google enhance performance and features."', () => {
+  const res1 = translateText('When toggled on, Antigravity collects usage data to help Google enhance performance and features.');
+  assert.strictEqual(res1, '开启后，Antigravity 将收集使用数据以协助 Google 改进性能与功能。');
+  const res2 = translateText('When toggled on, Antigravity collects usage data to help Google enhance performance and features');
+  assert.strictEqual(res2, '开启后，Antigravity 将收集使用数据以协助 Google 改进性能与功能');
+});
+
+it('应该正确翻译 "Enable Telemetry"', () => {
+  const res = translateText('Enable Telemetry');
+  assert.strictEqual(res, '启用遥测数据收集');
+});
+
+it('应该正确翻译 "Marketing Emails"', () => {
+  const res = translateText('Marketing Emails');
+  assert.strictEqual(res, '营销推广邮件');
+});
+
+it('应该正确翻译营销邮件说明 "Receive product updates, tips, and promotions from Google Antigravity via email."', () => {
+  const res1 = translateText('Receive product updates, tips, and promotions from Google Antigravity via email.');
+  assert.strictEqual(res1, '通过电子邮件接收来自 Google Antigravity 的产品更新、使用技巧与推广信息。');
+  const res2 = translateText('Receive product updates, tips, and promotions from Google Antigravity via email');
+  assert.strictEqual(res2, '通过电子邮件接收来自 Google Antigravity 的产品更新、使用技巧与推广信息');
+});
+
+it('应该正确翻译账户邮箱 "Email" 及其前缀变体', () => {
+  const res1 = translateText('Email');
+  assert.strictEqual(res1, '电子邮箱');
+  const res2 = translateText('Email:');
+  assert.strictEqual(res2, '电子邮箱:');
+  const res3 = translateText('Email: ');
+  assert.strictEqual(res3, '电子邮箱: ');
+});
+
+it('应该正确翻译服务条款协议前缀 "By using this app, you agree to its " 并保留尾部空格', () => {
+  const res1 = translateText('By using this app, you agree to its ');
+  assert.strictEqual(res1, '使用本应用即表示您同意其 ');
+  const res2 = translateText('By using this app, you agree to its');
+  assert.strictEqual(res2, '使用本应用即表示您同意其');
+  const res3 = translateText('By using this app, you agree to its Terms of Service.');
+  assert.strictEqual(res3, '使用本应用即表示您同意其服务条款。');
+});
+
+it('应该正确翻译方案前缀 "Your Plan:" 并支持动态与静态计划', () => {
+  const res1 = translateText('Your Plan:');
+  assert.strictEqual(res1, '当前方案:');
+  const res2 = translateText('Your Plan: ');
+  assert.strictEqual(res2, '当前方案: ');
+  const res3 = translateText('Your Plan: Free Tier');
+  assert.strictEqual(res3, '当前方案：免费版');
+  const res4 = translateText('Your Plan: Pro');
+  assert.strictEqual(res4, '当前方案: Pro');
+  const res5 = translateText('Your Plan: Enterprise');
+  assert.strictEqual(res5, '当前方案: Enterprise');
+});
+
 console.log('\n----------------------------------------------------');
 console.log(`Total: ${totalTests}, Passed: ${passedTests}, Failed: ${failedTests}`);
 if (failedTests > 0) {
