@@ -37,6 +37,37 @@ function formatLimitName(name) {
   return clean.replace(/\blimit\b/i, '额度').trim();
 }
 
+function formatPlanName(plan) {
+  if (!plan) return '';
+  const clean = plan.trim();
+  const lower = clean.toLowerCase();
+  const planMap = {
+    'free': '免费版',
+    'free tier': '免费版',
+    'free trial': '免费试用版',
+    'trial': '试用版',
+    'pro': 'Pro 专业版',
+    'pro tier': 'Pro 专业版',
+    'ultra': 'Ultra 旗舰版',
+    'ultra tier': 'Ultra 旗舰版',
+    'google ai ultra': 'Google AI Ultra (旗舰版)',
+    'google ai pro': 'Google AI Pro (专业版)',
+    'enterprise': '企业版',
+    'enterprise tier': '企业版',
+    'team': '团队版',
+    'teams': '团队版',
+    'individual': '个人版',
+    'business': '商业版',
+    'starter': '入门版',
+    'premium': '高级版',
+    'developer': '开发者版',
+    'standard': '标准版',
+    'pay as you go': '按量计费版',
+    'unlimited': '无限制版'
+  };
+  return planMap[lower] || clean;
+}
+
 const DYNAMIC_TEMPLATES = [
   // 1. 配额与限额动态时间刷新模板
   // 1.1 复合完整句（hit + so the ... does not apply + refresh + [credits]）
@@ -148,12 +179,38 @@ const DYNAMIC_TEMPLATES = [
   { regex: /^Killing\s+(.+)$/i, format: (m) => `正在终止 ${m[1]}` },
   { regex: /^Setting\s+(.+)$/i, format: (m) => `正在设置 ${m[1]}` },
   { regex: /^Signed\s+in\s+as\s+(.+)$/i, format: (m) => `已登录为 ${m[1]}` },
-  { regex: /^Your\s+Plan:\s*(.+)$/i, format: (m) => `当前方案: ${m[1]}` },
-  { regex: /^Your\s+Plan:?$/i, format: () => '当前方案:' }
+  // 账户设置 (Account Settings) 防御性动态模板
+  {
+    regex: /^Manage\s+your\s+plan,?\s+credentials,?\s+and\s+general\s+preferences\.?$/i,
+    format: () => '管理您的方案计划、凭证和通用偏好设置。'
+  },
+  {
+    regex: /^When\s+(?:toggled\s+on|enabled|turned\s+on),?\s+Antigravity\s+collects\s+usage\s+data\s+to\s+help\s+Google\s+enhance\s+performance\s+and\s+features\.?$/i,
+    format: () => '开启后，Antigravity 将收集使用数据以协助 Google 改进性能与功能。'
+  },
+  {
+    regex: /^Receive\s+(?:product\s+)?updates,?\s+tips,?\s+and\s+promotions\s+from\s+(?:Google\s+)?Antigravity\s+via\s+email\.?$/i,
+    format: () => '通过电子邮件接收来自 Google Antigravity 的产品更新、使用技巧与推广信息。'
+  },
+  {
+    regex: /^By\s+using\s+(?:this\s+app|this\s+application|Antigravity),?\s+you\s+agree\s+to\s+(?:its|our|the)\s+Terms\s+of\s+Service(?:\s+and\s+Privacy\s+Policy)?\.?$/i,
+    format: (m) => m[0].toLowerCase().includes('privacy')
+      ? '使用本应用即表示您同意其服务条款与隐私政策。'
+      : '使用本应用即表示您同意其服务条款。'
+  },
+  {
+    regex: /^Your\s+Plan:\s*(.+)$/i,
+    format: (m) => `当前方案: ${formatPlanName(m[1])}`
+  },
+  {
+    regex: /^Your\s+Plan:?$/i,
+    format: () => '当前方案:'
+  }
 ];
 
 module.exports = {
   DYNAMIC_TEMPLATES,
   formatLimitDuration,
-  formatLimitName
+  formatLimitName,
+  formatPlanName
 };

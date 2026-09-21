@@ -32,15 +32,19 @@ function createDispatcher(dictionary, lowerDictionary) {
     const trimmed = normalized.trim();
     if (!trimmed) return null;
 
-    // 1. 直接词典匹配 (Exact match)
-    if (dictionary[trimmed]) {
-      return normalized.replace(trimmed, dictionary[trimmed]);
-    }
+    // 1. 直接词典匹配 (Exact match: normalized 优先于 trimmed，保证显式空白配置不被截断)
     if (dictionary[normalized]) {
       return dictionary[normalized];
     }
+    if (dictionary[trimmed]) {
+      return normalized.replace(trimmed, dictionary[trimmed]);
+    }
 
     // 2. 大小写不敏感词典回退 (Case-insensitive fallback)
+    const lowerNormalized = normalized.toLowerCase();
+    if (lowerDictionary[lowerNormalized]) {
+      return lowerDictionary[lowerNormalized];
+    }
     const lower = trimmed.toLowerCase();
     if (lowerDictionary[lower]) {
       return normalized.replace(trimmed, lowerDictionary[lower]);
