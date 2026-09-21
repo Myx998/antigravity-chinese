@@ -5,12 +5,12 @@
 
 [![CI Pipeline](https://github.com/Myx998/antigravity-chinese/actions/workflows/ci.yml/badge.svg)](https://github.com/Myx998/antigravity-chinese/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![词条覆盖](https://img.shields.io/badge/词条覆盖-2%2C312%2B-brightgreen.svg)](#-真实汉化效果对照)
+[![词条覆盖](https://img.shields.io/badge/词条覆盖-2%2C312%2B-brightgreen.svg)](#-真实汉化效果实拍)
 [![平台支持](https://img.shields.io/badge/平台支持-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](#-一分钟极速安装)
 
 **告别半中半英与生硬机翻！专为新一代 AI 智能体开发工具 Google Antigravity 量身打造的无感纯中文体验。**
 
-[⚡ 一分钟极速安装](#-一分钟极速安装) • [✨ 为什么选这个汉化包](#-为什么选这个汉化包) • [📋 真实汉化效果对照](#-真实汉化效果对照) • [🔄 如何卸载还原](#-一键无损还原) • [❓ 常见疑问 FAQ](#-常见问题解答-faq)
+[⚡ 一分钟极速安装](#-一分钟极速安装) • [✨ 为什么选这个汉化包](#-为什么选这个汉化包) • [📸 真实汉化效果实拍](#-真实汉化效果实拍) • [🔄 如何卸载还原](#-一键无损还原) • [❓ 常见疑问 FAQ](#-常见问题解答-faq)
 
 </div>
 
@@ -84,7 +84,7 @@ Antigravity 最核心的 AI 思考与动作状态（带箭头折叠、耗时跳�
 
 ---
 
-## 📋 真实汉化效果对照
+## 📸 真实汉化效果实拍
 
 | 界面模块 | 原版英文显示 | 汉化后效果 |
 | :--- | :--- | :--- |
@@ -95,6 +95,18 @@ Antigravity 最核心的 AI 思考与动作状态（带箭头折叠、耗时跳�
 | **规划模式审核** | `User Review Required` / `Verification Plan` | `需用户审批` / `验证计划` |
 | **系统托盘右键** | `2 agents running` / `Quit` | `2 个智能体运行中` / `退出` |
 | **退出二次确认** | `Confirm Quit` / `Cancel` / `Quit` | `确认退出` / `取消` / `退出` |
+
+### 1. 设置页与核心界面深度汉化
+![设置页与界面汉化效果](./assets/screenshots/01-settings-ui.png)
+
+### 2. 126+ 官方技能插件使用指南全中文
+![插件说明汉化效果](./assets/screenshots/02-skills-guide.png)
+
+### 3. 动态思考模式与任务流实时解析（不夹生）
+![思考模式汉化效果](./assets/screenshots/03-thinking-mode.png)
+
+### 4. 动态派生子智能体构词法合成
+![子智能体汉化效果](./assets/screenshots/04-subagents-flow.png)
 
 ---
 
